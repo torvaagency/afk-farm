@@ -1,8 +1,7 @@
 import { useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { useGameStore } from "./game/useGameStore"
@@ -11,21 +10,17 @@ import { cn } from "@/lib/utils"
 
 // React Icons
 import {
-  FaSeedling,
   FaCoins,
   FaBriefcase,
-  FaTrophy,
   FaLock,
   FaChevronLeft,
   FaChevronRight,
-  FaFlask,
   FaStore,
-  FaStar,
   FaBolt,
   FaMagic,
   FaTerminal
 } from "react-icons/fa"
-import { GiPotionBall, GiMagicGate, GiCrystalGrowth, GiDna2 } from "react-icons/gi"
+import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
 import { HiSparkles } from "react-icons/hi"
 
 export default function App() {
@@ -188,7 +183,6 @@ export default function App() {
                   >
                     {isNextToUnlock ? (
                       <div className="flex flex-col items-center gap-1 text-center">
-                        <div className="text-cyan-500 font-gamer text-[8px] tracking-widest">UNLOCK</div>
                         <div className="text-[9px] font-mono text-white opacity-40">
                           ${unlockCost.toLocaleString()}
                         </div>
@@ -405,20 +399,20 @@ export default function App() {
                         whileHover={!isLocked ? { y: -4, borderColor: "rgba(34, 211, 238, 0.3)" } : {}}
                         className={cn(
                           "inline-flex flex-col min-w-[140px] p-3 transition-all rounded-none relative border border-white/5 bg-black/60",
-                          isLocked && "opacity-60 grayscale"
+                          isLocked && "opacity-40 grayscale blur-[1px]"
                         )}
                       >
                         {isLocked && (
-                          <div className="absolute inset-0 z-10 bg-black/80 flex flex-col items-center justify-center text-white gap-2">
-                            <FaLock size={16} className="text-cyan-500/50" />
-                            <span className="text-[9px] font-gamer text-cyan-500/50 tracking-widest font-bold">LOCKED_T{plant.levelRequired}</span>
+                          <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white gap-2">
+                            <FaLock size={16} className="text-cyan-900" />
+                            <span className="text-[9px] font-gamer text-cyan-900 tracking-widest font-bold">LOCKED_T{plant.levelRequired}</span>
                           </div>
                         )}
                         <div className="flex items-center justify-center mb-3 h-14 w-full bg-black/40 border-b border-white/5">
                           <span className={cn("text-3xl group-hover:scale-125 transition-transform duration-500 arcane-glow", isLocked && "blur-md")}>{plant.seedEmoji}</span>
                         </div>
                         <div className="mb-3">
-                          <h3 className="font-gamer font-bold text-[10px] truncate tracking-widest text-white">{plant.name}</h3>
+                          <h3 className="font-gamer font-bold text-[10px] truncate tracking-widest text-white opacity-80">{plant.name}</h3>
                           <div className="flex items-center justify-between mt-1">
                             <div className="text-[11px] font-mono font-bold text-amber-500 text-glow-cyan">
                               ${plant.cost.toLocaleString()}

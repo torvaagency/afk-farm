@@ -10,13 +10,13 @@ import { PLANTS } from "./game/constants"
 import { cn } from "@/lib/utils"
 
 // React Icons
-import { 
-  FaSeedling, 
-  FaCoins, 
-  FaBriefcase, 
-  FaTrophy, 
-  FaLock, 
-  FaChevronLeft, 
+import {
+  FaSeedling,
+  FaCoins,
+  FaBriefcase,
+  FaTrophy,
+  FaLock,
+  FaChevronLeft,
   FaChevronRight,
   FaFlask,
   FaStore,
@@ -32,6 +32,7 @@ export default function App() {
   const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame } = useGameStore()
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [showSellConfirm, setShowSellConfirm] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const magicStyle = "magic-panel rounded-none"
@@ -47,7 +48,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-cyan-900 overflow-x-hidden">
       <div className="scanline" />
-      
+
       {/* Toast Notifications - Arcane Whispers */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none items-end">
         <AnimatePresence>
@@ -86,7 +87,7 @@ export default function App() {
               <h1 className="text-2xl font-gamer font-black tracking-tighter leading-none text-glow-cyan">AFK FARM</h1>
               <div className="flex items-center gap-2">
                 <span className="text-[8px] text-cyan-500 uppercase tracking-widest font-bold flex items-center gap-1">
-                  <FaMagic size={8} /> Core Active
+                  <FaMagic size={8} /> SYSTEM_ONLINE
                 </span>
                 {isSpeedBoosted && (
                   <div className="flex items-center gap-1 text-[8px] text-purple-400 uppercase font-bold animate-pulse text-glow-purple">
@@ -101,14 +102,14 @@ export default function App() {
             <div className="hidden md:flex items-center gap-4 w-44">
               <div className="flex flex-col items-end leading-tight">
                 <div className="text-[10px] font-gamer font-bold text-cyan-400 flex items-center gap-2">
-                   Tier_{state.level}
+                  Tier_{state.level}
                 </div>
                 <div className="text-[9px] text-neutral-500 font-mono tracking-widest">
                   EXP_{state.exp}/{expToNextLevel}
                 </div>
               </div>
               <div className="flex-1 h-1 bg-neutral-900 overflow-hidden border border-white/5 relative">
-                <motion.div 
+                <motion.div
                   className="h-full bg-cyan-500 shadow-[0_0_15px_#22d3ee]"
                   initial={{ width: 0 }}
                   animate={{ width: `${(state.exp / expToNextLevel) * 100}%` }}
@@ -163,7 +164,7 @@ export default function App() {
               )}
             </AnimatePresence>
           </div>
-          
+
           <div className={cn("grid grid-cols-4 md:grid-cols-8 gap-2 p-3 neon-border-emerald", magicStyle)}>
             {state.slots.map((slot, i) => {
               const isUnlocked = i < state.unlockedSlots
@@ -180,20 +181,20 @@ export default function App() {
                     disabled={!isNextToUnlock || state.money < unlockCost}
                     className={cn(
                       "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 overflow-hidden border border-white/5",
-                      isNextToUnlock 
-                        ? "bg-cyan-500/5 border-cyan-500/30 hover:border-cyan-500 cursor-pointer" 
+                      isNextToUnlock
+                        ? "bg-cyan-500/5 border-cyan-500/30 hover:border-cyan-500 cursor-pointer"
                         : "bg-black cursor-not-allowed opacity-10"
                     )}
                   >
                     {isNextToUnlock ? (
                       <div className="flex flex-col items-center gap-1 text-center">
-                        <div className="text-cyan-500 font-gamer text-[8px] tracking-widest">WAKEN</div>
+                        <div className="text-cyan-500 font-gamer text-[8px] tracking-widest">UNLOCK</div>
                         <div className="text-[9px] font-mono text-white opacity-40">
                           ${unlockCost.toLocaleString()}
                         </div>
                       </div>
                     ) : (
-                      <FaLock size={12} className="text-neutral-800" />
+                      <FaLock size={12} className="text-neutral-400 opacity-60" />
                     )}
                   </motion.button>
                 )
@@ -205,7 +206,7 @@ export default function App() {
               const adjustedElapsed = elapsedSeconds * speedMultiplier
               const remainingSeconds = slot ? Math.max(0, Math.ceil((plant!.growTime - adjustedElapsed) / speedMultiplier)) : 0
               const progress = slot ? Math.min(100, (adjustedElapsed / plant!.growTime) * 100) : 0
-              
+
               let currentEmoji = "🕳️"
               if (slot) {
                 const stageIndex = Math.floor((progress / 100) * (plant!.stages.length - 1))
@@ -233,13 +234,13 @@ export default function App() {
                     !slot ? "border-white/5 hover:border-cyan-500/50" : "border-white/10 shadow-2xl",
                     slot?.isHarvestable && "border-cyan-400 shadow-[0_0_25px_#22d3ee55] animate-magic-float"
                   )}
-                  style={{ 
-                    backgroundImage: 'linear-gradient(rgba(0,10,20,0.7), rgba(0,10,20,0.7)), url(/farm-patch.jpg)', 
+                  style={{
+                    backgroundImage: 'linear-gradient(rgba(0,10,20,0.3), rgba(0,10,20,0.3)), url(/farm-patch.jpg)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                   }}
                 >
-                  <motion.span 
+                  <motion.span
                     animate={slot?.isHarvestable ? { scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] } : {}}
                     transition={slot?.isHarvestable ? { repeat: Infinity, duration: 2 } : {}}
                     className={cn(
@@ -249,14 +250,14 @@ export default function App() {
                   >
                     {currentEmoji}
                   </motion.span>
-                  
+
                   {slot && !slot.isHarvestable && (
                     <>
                       <div className="absolute top-1 right-1 text-[7px] px-1.5 font-mono bg-black/90 text-cyan-500 border border-cyan-500/30">
                         {remainingSeconds}s
                       </div>
                       <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
-                        <motion.div 
+                        <motion.div
                           className={cn(
                             "h-full bg-cyan-500 shadow-[0_0_10px_#22d3ee]",
                             isSpeedBoosted && "bg-purple-400 shadow-[0_0_10px_#a855f7]"
@@ -270,10 +271,10 @@ export default function App() {
 
                   {slot?.isHarvestable && (
                     <div className="absolute inset-0 bg-cyan-500/5 flex items-center justify-center overflow-hidden">
-                       <motion.div 
+                      <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-                        className="w-full h-full border border-cyan-500/10 rounded-full scale-[1.5]" 
+                        className="w-full h-full border border-cyan-500/10 rounded-full scale-[1.5]"
                       />
                       <div className="text-cyan-300 font-gamer text-[8px] tracking-[0.2em] animate-pulse text-glow-cyan">BLOOMED</div>
                     </div>
@@ -404,20 +405,20 @@ export default function App() {
                         whileHover={!isLocked ? { y: -4, borderColor: "rgba(34, 211, 238, 0.3)" } : {}}
                         className={cn(
                           "inline-flex flex-col min-w-[140px] p-3 transition-all rounded-none relative border border-white/5 bg-black/60",
-                          isLocked && "opacity-40 grayscale blur-[1px]"
+                          isLocked && "opacity-60 grayscale"
                         )}
                       >
                         {isLocked && (
-                          <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white gap-2">
-                            <FaLock size={16} className="text-cyan-900" />
-                            <span className="text-[9px] font-gamer text-cyan-900 tracking-widest font-bold">LOCKED_T{plant.levelRequired}</span>
+                          <div className="absolute inset-0 z-10 bg-black/80 flex flex-col items-center justify-center text-white gap-2">
+                            <FaLock size={16} className="text-cyan-500/50" />
+                            <span className="text-[9px] font-gamer text-cyan-500/50 tracking-widest font-bold">LOCKED_T{plant.levelRequired}</span>
                           </div>
                         )}
                         <div className="flex items-center justify-center mb-3 h-14 w-full bg-black/40 border-b border-white/5">
                           <span className={cn("text-3xl group-hover:scale-125 transition-transform duration-500 arcane-glow", isLocked && "blur-md")}>{plant.seedEmoji}</span>
                         </div>
                         <div className="mb-3">
-                          <h3 className="font-gamer font-bold text-[10px] truncate tracking-widest text-white opacity-80">{plant.name}</h3>
+                          <h3 className="font-gamer font-bold text-[10px] truncate tracking-widest text-white">{plant.name}</h3>
                           <div className="flex items-center justify-between mt-1">
                             <div className="text-[11px] font-mono font-bold text-amber-500 text-glow-cyan">
                               ${plant.cost.toLocaleString()}
@@ -512,6 +513,35 @@ export default function App() {
         </motion.section>
       </main>
 
+      {/* Footer - HUD Console */}
+      <footer className="mt-20 border-t border-white/5 bg-black/80 backdrop-blur-md py-8 px-6">
+        <div className="mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center md:items-start gap-1">
+            <h2 className="text-sm font-gamer font-bold text-glow-cyan text-cyan-400 tracking-widest">AFK FARM // WRAITH22444</h2>
+            <p className="text-[9px] text-neutral-600 font-mono uppercase tracking-[0.3em]">All rights reserved © 2026</p>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <a
+              href="https://github.com/wraith22444/afk-farming"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-gamer font-bold text-neutral-400 hover:text-cyan-400 transition-colors tracking-widest border-b border-transparent hover:border-cyan-400 pb-1"
+            >
+              SOURCE_CODE
+            </a>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowResetConfirm(true)}
+              className="text-[10px] font-gamer font-bold text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-none tracking-widest"
+            >
+              WIPE_MEMORY
+            </Button>
+          </div>
+        </div>
+      </footer>
+
       {/* Confirmation Modal */}
       <AnimatePresence>
         {showSellConfirm && (
@@ -549,6 +579,52 @@ export default function App() {
                   onClick={() => setShowSellConfirm(false)}
                 >
                   ABORT
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showResetConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowResetConfirm(false)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={cn("relative w-full max-w-sm p-8 border border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]", magicStyle)}
+            >
+              <div className="flex items-center gap-4 mb-4 text-red-500">
+                <FaTerminal size={24} className="animate-pulse" />
+                <h3 className="text-xl font-gamer font-bold tracking-widest uppercase">Critical_Failure</h3>
+              </div>
+              <p className="text-xs text-neutral-400 font-mono mb-8 uppercase tracking-wider leading-relaxed">
+                Warning: Initiating a global memory wipe will permanently erase all credits, levels, and items. This action cannot be undone.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Button
+                  className="w-full bg-red-600 hover:bg-red-500 text-white rounded-none font-gamer font-bold h-12 tracking-[0.3em]"
+                  onClick={() => {
+                    resetGame()
+                    setShowResetConfirm(false)
+                  }}
+                >
+                  CONFIRM_WIPE
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full text-neutral-500 hover:text-white rounded-none font-gamer font-bold h-10 tracking-[0.2em]"
+                  onClick={() => setShowResetConfirm(false)}
+                >
+                  CANCEL_ABORT
                 </Button>
               </div>
             </motion.div>

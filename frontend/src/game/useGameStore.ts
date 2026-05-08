@@ -152,27 +152,27 @@ export function useGameStore() {
     const slot = state.slots[slotIndex];
     if (slot && slot.isHarvestable) {
       const plant = PLANTS[slot.plantId];
+      const expGain = Math.floor(plant.cost / 20) + 5;
+      const foundPotion = Math.random() < 0.15;
+      let finalLevel = state.level;
+      
       setState((prev) => {
         const newSlots = [...prev.slots];
         newSlots[slotIndex] = null;
         
-        const expGain = Math.floor(plant.cost / 20) + 5;
         let newExp = prev.exp + expGain;
         let newLevel = prev.level;
         
         while (newExp >= getExpToNextLevel(newLevel)) {
           newExp -= getExpToNextLevel(newLevel);
           newLevel++;
-          addToast(`LEVEL UP! You are now level ${newLevel}!`, "success");
         }
-
-        addToast(`+${expGain} XP`, "xp");
+        finalLevel = newLevel;
 
         let newItems = { ...prev.items };
-        if (Math.random() < 0.15) {
+        if (foundPotion) {
           const itemType = "speed_potion";
           newItems[itemType] = (newItems[itemType] || 0) + 1;
-          addToast("Found a Speed Potion!", "item");
         }
 
         return {
@@ -187,6 +187,16 @@ export function useGameStore() {
           exp: newExp,
         };
       });
+
+      // Fire toasts outside setState
+      addToast(`+${expGain} XP`, "xp");
+      if (finalLevel > state.level) {
+        addToast(`LEVEL UP! You are now level ${finalLevel}!`, "success");
+      }
+      if (foundPotion) {
+        addToast("Found a Speed Potion!", "item");
+      }
+      
       return true;
     }
     return false;
@@ -232,18 +242,19 @@ export function useGameStore() {
   };
 
   const sellAllCrops = () => {
-    setState((prev) => {
-      let totalGain = 0;
-      Object.entries(prev.crops).forEach(([id, count]) => {
-        totalGain += count * PLANTS[id].sellPrice;
-      });
-      if (totalGain > 0) addToast(`Sold everything for $${totalGain}`, "success");
-      return {
+    let totalGain = 0;
+    Object.entries(state.crops).forEach(([id, count]) => {
+      totalGain += count * PLANTS[id].sellPrice;
+    });
+
+    if (totalGain > 0) {
+      setState((prev) => ({
         ...prev,
         money: prev.money + totalGain,
         crops: {},
-      };
-    });
+      }));
+      addToast(`Sold everything for $${totalGain}`, "success");
+    }
   };
 
   const buySlot = () => {

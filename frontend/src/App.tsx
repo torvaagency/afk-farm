@@ -551,9 +551,9 @@ export default function App() {
                         if (count === 0) return null
                         const plant = PLANTS[id]
                         return (
-                          <ContextMenu key={id}>
-                            <ContextMenuTrigger asChild>
-                              <Tooltip>
+                          <Tooltip key={id}>
+                            <ContextMenu>
+                              <ContextMenuTrigger asChild>
                                 <TooltipTrigger asChild>
                                   <motion.button
                                     layout
@@ -571,20 +571,20 @@ export default function App() {
                                     <span className="text-[10px] font-mono font-bold">x{count}</span>
                                   </motion.button>
                                 </TooltipTrigger>
-                                <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                                  Select {plant.name} Seeds (Right-click for options)
-                                </TooltipContent>
-                              </Tooltip>
-                            </ContextMenuTrigger>
-                            <ContextMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[120px]">
-                              <ContextMenuItem 
-                                onClick={() => sellSeed(id)}
-                                className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer"
-                              >
-                                Sell 1x for ${Math.floor(plant.cost * 0.5)}
-                              </ContextMenuItem>
-                            </ContextMenuContent>
-                          </ContextMenu>
+                              </ContextMenuTrigger>
+                              <ContextMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[120px]">
+                                <ContextMenuItem 
+                                  onClick={() => sellSeed(id)}
+                                  className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer"
+                                >
+                                  Sell 1x for ${Math.floor(plant.cost * 0.5)}
+                                </ContextMenuItem>
+                              </ContextMenuContent>
+                            </ContextMenu>
+                            <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
+                              Select {plant.name} Seeds (Right-click to sell)
+                            </TooltipContent>
+                          </Tooltip>
                         )
                       })}
                     </AnimatePresence>

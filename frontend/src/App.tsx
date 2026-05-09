@@ -796,6 +796,83 @@ export default function App() {
               </CardContent>
             </Card>
           </motion.section>
+          {/* Global Chat HUD - Persistent Panel */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mt-8"
+          >
+            <Card className={cn(magicStyle, "border-cyan-500/20 overflow-hidden")}>
+              <CardHeader className="py-2 px-5 border-b border-white/5 bg-white/5 flex flex-row items-center justify-between">
+                <CardTitle className="text-[10px] font-gamer font-bold text-cyan-500/60 flex items-center gap-3 tracking-widest uppercase">
+                  <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
+                  Global_Comm_Channel
+                </CardTitle>
+                <div className="text-[9px] text-neutral-600 font-mono">
+                  ACTIVE_LINK // {username}
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-48 w-full bg-black/20" ref={chatScrollRef}>
+                  <div className="p-4 space-y-3">
+                    {messages.length === 0 ? (
+                      <div className="text-[9px] font-mono text-neutral-700 italic text-center py-8 uppercase tracking-[0.3em] opacity-50">
+                        Initializing secure connection... awaiting signal...
+                      </div>
+                    ) : (
+                      messages.map((msg, i) => (
+                        <div key={i} className="flex items-start gap-4 text-[10px] font-mono group border-l border-transparent hover:border-cyan-500/30 pl-2 transition-colors">
+                          <span className={cn(
+                            "shrink-0 font-bold tracking-tighter uppercase text-[9px]",
+                            msg.user === username ? "text-cyan-400" : "text-purple-400"
+                          )}>
+                            [{msg.user}]
+                          </span>
+                          <div className="flex flex-col gap-0.5">
+                            <p className={cn(
+                              "leading-relaxed",
+                              isDarkMode ? "text-neutral-300" : "text-neutral-700"
+                            )}>
+                              {msg.message}
+                            </p>
+                            <span className="text-[7px] text-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
+                              Received_{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false })}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+                <div className="p-3 bg-black/40 border-t border-white/5 flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-cyan-500/50">
+                      <FaTerminal size={10} />
+                    </div>
+                    <input
+                      type="text"
+                      value={currentMessage}
+                      onChange={(e) => setCurrentMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                      placeholder="ENTER COMMAND OR MESSAGE..."
+                      className={cn(
+                        "w-full bg-black/40 border border-white/10 pl-8 pr-3 py-2 text-[10px] font-mono focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-neutral-800",
+                        isDarkMode ? "text-cyan-100" : "text-black"
+                      )}
+                    />
+                  </div>
+                  <Button
+                    onClick={sendMessage}
+                    disabled={!currentMessage.trim()}
+                    className="bg-cyan-900/20 hover:bg-cyan-500 text-cyan-400 hover:text-black border border-cyan-500/30 rounded-none px-6 text-[10px] font-gamer tracking-widest transition-all"
+                  >
+                    SEND_PKT
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.section>
         </main>
 
         {/* Footer - HUD Console */}
@@ -929,92 +1006,6 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Global Chat HUD */}
-        <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3">
-          <AnimatePresence>
-            {isChatOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                className={cn(
-                  "w-80 h-96 flex flex-col border shadow-2xl overflow-hidden",
-                  magicStyle,
-                  isDarkMode ? "bg-black/90 border-cyan-500/30" : "bg-white/95 border-cyan-500/50"
-                )}
-              >
-                <div className="p-3 border-b border-white/10 bg-cyan-500/5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-gamer font-bold text-cyan-400 tracking-widest uppercase">Global_Comm_Link</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-neutral-500">ID: {username}</span>
-                </div>
-
-                <ScrollArea className="flex-1 p-4" ref={chatScrollRef}>
-                  <div className="space-y-3">
-                    {messages.length === 0 ? (
-                      <div className="text-[9px] font-mono text-neutral-600 italic text-center py-4 uppercase tracking-widest">Awaiting signal...</div>
-                    ) : (
-                      messages.map((msg, i) => (
-                        <div key={i} className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              "text-[8px] px-1 font-bold rounded-none border",
-                              msg.user === username ? "text-cyan-400 border-cyan-500/30 bg-cyan-500/5" : "text-purple-400 border-purple-500/30 bg-purple-500/5"
-                            )}>
-                              {msg.user}
-                            </span>
-                            <span className="text-[7px] font-mono text-neutral-700">[{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}]</span>
-                          </div>
-                          <p className={cn(
-                            "text-[10px] font-mono leading-relaxed break-words pl-1 border-l border-white/5",
-                            isDarkMode ? "text-neutral-300" : "text-neutral-700"
-                          )}>
-                            {msg.message}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </ScrollArea>
-
-                <div className="p-3 border-t border-white/10 bg-black/20 flex gap-2">
-                  <input
-                    type="text"
-                    value={currentMessage}
-                    onChange={(e) => setCurrentMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                    placeholder="ENTER MESSAGE..."
-                    className={cn(
-                      "flex-1 bg-transparent border border-white/10 px-3 py-1.5 text-[10px] font-mono focus:outline-none focus:border-cyan-500/50 transition-colors",
-                      isDarkMode ? "text-white" : "text-black"
-                    )}
-                  />
-                  <Button
-                    size="icon"
-                    onClick={sendMessage}
-                    disabled={!currentMessage.trim()}
-                    className="h-8 w-8 bg-cyan-600 hover:bg-cyan-500 text-black rounded-none"
-                  >
-                    <FaPaperPlane size={10} />
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <Button
-            size="icon"
-            onClick={() => setIsChatOpen(!isChatOpen)}
-            className={cn(
-              "h-12 w-12 rounded-none shadow-2xl transition-all duration-300 border-2",
-              isChatOpen ? "bg-red-500/20 border-red-500 text-red-500" : "bg-cyan-600 border-cyan-400 text-black hover:scale-110",
-              "arcane-glow"
-            )}
-          >
-            <FaCommentAlt size={18} />
-          </Button>
         </div>
       </div>
     </TooltipProvider>

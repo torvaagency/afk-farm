@@ -23,7 +23,7 @@ import {
 } from "react-icons/fa"
 import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
 import { HiSparkles } from "react-icons/hi"
-import { HubConnectionBuilder, HubConnection, LogLevel } from "@microsoft/signalr"
+import { HubConnectionBuilder, HubConnection, LogLevel, HubConnectionState } from "@microsoft/signalr"
 import { FaSun, FaMoon, FaCommentAlt, FaPaperPlane } from "react-icons/fa"
 
 const MagicGrowth = () => (
@@ -119,7 +119,7 @@ export default function App() {
 
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
-      .withUrl("https://localhost:7164/chatHub") // Default ASP.NET core HTTPS port
+      .withUrl("https://localhost:7180/chatHub") // Fixed port from launchSettings.json
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build()
@@ -147,13 +147,15 @@ export default function App() {
   }, [messages, isChatOpen])
 
   const sendMessage = async () => {
-    if (connection && currentMessage.trim()) {
+    if (connection && connection.state === HubConnectionState.Connected && currentMessage.trim()) {
       try {
         await connection.invoke("SendMessage", username, currentMessage)
         setCurrentMessage("")
       } catch (e) {
-        console.error(e)
+        console.error("SignalR Send Error: ", e)
       }
+    } else if (connection?.state !== HubConnectionState.Connected) {
+      addToast("Connecting to server...", "xp")
     }
   }
 
@@ -1005,8 +1007,6 @@ export default function App() {
             </div>
           )}
         </AnimatePresence>
-
-        </div>
       </div>
     </TooltipProvider>
   )

@@ -118,8 +118,11 @@ export default function App() {
   const [username] = useState(() => `Player_${Math.floor(Math.random() * 9000) + 1000}`)
 
   useEffect(() => {
+    // Use environment variable for production, fallback to local for dev
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5176";
+    
     const newConnection = new HubConnectionBuilder()
-      .withUrl("http://localhost:5176/chatHub") // Switched to verified active HTTP port
+      .withUrl(`${BACKEND_URL}/chatHub`)
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build()

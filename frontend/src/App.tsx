@@ -24,7 +24,7 @@ import {
 import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
 import { HiSparkles } from "react-icons/hi"
 import { HubConnectionBuilder, HubConnection, LogLevel, HubConnectionState } from "@microsoft/signalr"
-import { FaSun, FaMoon, FaCommentAlt, FaPaperPlane } from "react-icons/fa"
+import { FaSun, FaMoon } from "react-icons/fa"
 
 const MagicGrowth = () => (
   <div className="absolute inset-0 pointer-events-none flex items-center justify-center">

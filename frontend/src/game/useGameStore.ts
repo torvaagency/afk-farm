@@ -340,5 +340,6 @@ export function useGameStore() {
     isSpeedBoosted: Date.now() < state.activeEffects.speedBoostUntil,
     expToNextLevel: getExpToNextLevel(state.level),
     resetGame,
+    addToast,
   };
 }

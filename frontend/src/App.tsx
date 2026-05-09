@@ -24,8 +24,75 @@ import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
 import { HiSparkles } from "react-icons/hi"
 import { FaSun, FaMoon } from "react-icons/fa"
 
+const MagicGrowth = () => (
+  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+    <svg viewBox="0 0 100 100" className="w-full h-full opacity-60">
+      <motion.circle
+        cx="50"
+        cy="50"
+        r="40"
+        fill="none"
+        stroke="url(#magicGradient)"
+        strokeWidth="1"
+        strokeDasharray="10 5"
+        animate={{ rotate: 360 }}
+        transition={{ repeat: Infinity, duration: 10, ease: "linear" }}
+      />
+      {[0, 72, 144, 216, 288].map((angle, i) => (
+        <motion.circle
+          key={i}
+          r="1.5"
+          fill="#22d3ee"
+          animate={{
+            cx: [
+              50 + 35 * Math.cos((angle * Math.PI) / 180),
+              50 + 35 * Math.cos(((angle + 360) * Math.PI) / 180)
+            ],
+            cy: [
+              50 + 35 * Math.sin((angle * Math.PI) / 180),
+              50 + 35 * Math.sin(((angle + 360) * Math.PI) / 180)
+            ],
+            opacity: [0.2, 1, 0.2],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 5,
+            ease: "linear",
+          }}
+        />
+      ))}
+      <defs>
+        <linearGradient id="magicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#22d3ee" />
+          <stop offset="50%" stopColor="#a855f7" />
+          <stop offset="100%" stopColor="#22d3ee" />
+        </linearGradient>
+      </defs>
+    </svg>
+    <div className="absolute inset-0">
+      {[...Array(5)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-0.5 h-0.5 bg-cyan-300 rounded-full blur-[1px]"
+          initial={{ x: "50%", y: "70%", opacity: 0 }}
+          animate={{
+            y: ["70%", "10%"],
+            x: ["45%", "55%", "40%", "60%"],
+            opacity: [0, 1, 0],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 3,
+            delay: i * 0.6,
+          }}
+        />
+      ))}
+    </div>
+  </div>
+)
+
 export default function App() {
-  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame } = useGameStore()
+  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -69,7 +136,7 @@ export default function App() {
 
   return (
     <div className={cn(
-      "min-h-screen font-sans overflow-x-hidden transition-colors duration-500",
+      "min-h-screen font-sans transition-colors duration-500",
       isDarkMode ? "bg-black text-white selection:bg-cyan-900" : "bg-white text-black selection:bg-cyan-200"
     )}>
       <div className="scanline" />
@@ -93,7 +160,7 @@ export default function App() {
               )}
             >
               <div className="flex items-center gap-2">
-                <HiSparkles className="animate-pulse" />
+                <HiSparkles className="animate-pulse text-white" />
                 {toast.message}
               </div>
             </motion.div>
@@ -106,7 +173,7 @@ export default function App() {
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className={cn(
-          "sticky top-0 z-10 border-b backdrop-blur-md px-6 py-3",
+          "sticky top-0 z-50 border-b backdrop-blur-md px-6 py-3",
           isDarkMode ? "border-white/5 bg-black/80" : "border-black/5 bg-white/80"
         )}
       >
@@ -115,7 +182,7 @@ export default function App() {
             <div className="flex flex-col">
               <h1 className="text-2xl font-gamer font-black tracking-tighter leading-none text-glow-cyan">AFK FARM</h1>
               <div className="flex items-center gap-2">
-                <span className="text-[8px] text-cyan-500 uppercase tracking-widest font-bold flex items-center gap-1">
+                <span className="text-[8px] text-white uppercase tracking-widest font-bold flex items-center gap-1">
                   <FaMagic size={8} /> SYSTEM_ONLINE
                 </span>
                 {isSpeedBoosted && (
@@ -267,10 +334,14 @@ export default function App() {
                   onClick={() => {
                     if (slot?.isHarvestable) {
                       harvestCrop(i)
-                    } else if (!slot && selectedSeed) {
-                      const success = plantSeed(i, selectedSeed)
-                      if (success && state.inventory[selectedSeed] <= 1) {
-                        setSelectedSeed(null)
+                    } else if (!slot) {
+                      if (selectedSeed) {
+                        const success = plantSeed(i, selectedSeed)
+                        if (success && (state.inventory[selectedSeed] || 0) <= 1) {
+                          setSelectedSeed(null)
+                        }
+                      } else {
+                        addToast("Select a seed from inventory first!", "info")
                       }
                     }
                   }}
@@ -299,6 +370,7 @@ export default function App() {
 
                   {slot && !slot.isHarvestable && (
                     <>
+                      <MagicGrowth />
                       <div className="absolute top-1 right-1 text-[7px] px-1.5 font-mono bg-black/90 text-cyan-500 border border-cyan-500/30">
                         {remainingSeconds}s
                       </div>
@@ -347,7 +419,7 @@ export default function App() {
               isDarkMode ? "border-white/5 bg-white/5" : "border-black/10 bg-black/5"
             )}>
               <CardTitle className="text-[10px] font-gamer font-bold flex items-center gap-3 opacity-80 tracking-widest uppercase">
-                <FaBriefcase size={10} className="text-cyan-500" /> Inventory
+                <FaBriefcase size={10} className="text-white" /> Inventory
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 px-4">
@@ -404,7 +476,7 @@ export default function App() {
                         isDarkMode ? "bg-black border-purple-500 hover:bg-purple-500/10" : "bg-white border-purple-400 hover:bg-purple-400/10"
                       )}
                     >
-                      <GiPotionBall size={16} className="text-purple-400" />
+                      <GiPotionBall size={16} className="text-white" />
                       <div className="text-[9px] font-gamer font-bold text-purple-300 uppercase tracking-widest">
                         Haste_Essence [x{state.items.speed_potion}]
                       </div>
@@ -435,7 +507,7 @@ export default function App() {
               isDarkMode ? "border-white/5 bg-white/5" : "border-black/10 bg-black/5"
             )}>
               <CardTitle className="text-[10px] font-gamer font-bold flex items-center gap-3 opacity-80 tracking-widest">
-                <FaStore size={14} className="text-cyan-500" /> Seed Shop
+                <FaStore size={14} className="text-white" /> Seed Shop
               </CardTitle>
               <div className="flex items-center gap-3">
                 <Button
@@ -527,7 +599,7 @@ export default function App() {
           <Card className={cn(magicStyle, "neon-border-amber")}>
             <CardHeader className="py-2 px-5 border-b border-amber-500/20 bg-amber-500/5 flex flex-row items-center justify-between">
               <CardTitle className="text-[10px] font-gamer font-bold text-amber-500 flex items-center gap-3 tracking-widest">
-                <GiCrystalGrowth size={16} /> Sell Station
+                <GiCrystalGrowth size={16} className="text-white" /> Sell Station
               </CardTitle>
               <Button
                 size="sm"
@@ -687,7 +759,7 @@ export default function App() {
               className={cn("relative w-full max-w-sm p-8 border border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]", magicStyle)}
             >
               <div className="flex items-center gap-4 mb-4 text-red-500">
-                <FaTerminal size={24} className="animate-pulse" />
+                <FaTerminal size={24} className="animate-pulse text-white" />
                 <h3 className="text-xl font-gamer font-bold tracking-widest uppercase">Critical_Failure</h3>
               </div>
               <p className={cn(

@@ -49,6 +49,7 @@
     color: hsl(var(--foreground));
     font-family: "Orbitron", sans-serif;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
     background-image: 
       radial-gradient(circle at 50% 20%, #0a0f1e 0%, #000 100%),
       linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),

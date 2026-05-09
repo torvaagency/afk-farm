@@ -61,8 +61,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🍅",
     seedEmoji: "🍅",
     cost: 600,
-    sellPrice: 1800,
-    growTime: 480, // 8m
+    sellPrice: 2200,
+    growTime: 300, // 5m (was 8m)
     stages: ["🌱", "🌿", "🍅"],
     levelRequired: 7,
   },
@@ -72,8 +72,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🥔",
     seedEmoji: "🥔",
     cost: 1500,
-    sellPrice: 5000,
-    growTime: 900, // 15m
+    sellPrice: 6500,
+    growTime: 600, // 10m (was 15m)
     stages: ["🌱", "🌿", "🥔"],
     levelRequired: 10,
   },
@@ -83,8 +83,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🌲",
     seedEmoji: "🌲",
     cost: 4000,
-    sellPrice: 15000,
-    growTime: 1800, // 30m
+    sellPrice: 20000,
+    growTime: 1200, // 20m (was 30m)
     stages: ["🌱", "🌲", "🌲"],
     levelRequired: 14,
   },
@@ -94,8 +94,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🌳",
     seedEmoji: "🌳",
     cost: 10000,
-    sellPrice: 42000,
-    growTime: 3600, // 1h
+    sellPrice: 55000,
+    growTime: 2400, // 40m (was 1h)
     stages: ["🌱", "🌳", "🌳"],
     levelRequired: 18,
   },
@@ -105,8 +105,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🍓",
     seedEmoji: "🍓",
     cost: 25000,
-    sellPrice: 120000,
-    growTime: 7200, // 2h
+    sellPrice: 150000,
+    growTime: 3600, // 1h (was 2h)
     stages: ["🌱", "🌿", "🍓"],
     levelRequired: 22,
   },
@@ -116,8 +116,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🍇",
     seedEmoji: "🍇",
     cost: 60000,
-    sellPrice: 320000,
-    growTime: 10800, // 3h
+    sellPrice: 450000,
+    growTime: 7200, // 2h (was 3h)
     stages: ["🌱", "🌿", "🍇"],
     levelRequired: 28,
   },
@@ -127,8 +127,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🌸",
     seedEmoji: "✨",
     cost: 150000,
-    sellPrice: 900000,
-    growTime: 21600, // 6h
+    sellPrice: 1200000,
+    growTime: 14400, // 4h (was 6h)
     stages: ["✨", "💠", "🌸"],
     levelRequired: 35,
   },
@@ -138,8 +138,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🌶️",
     seedEmoji: "🔥",
     cost: 400000,
-    sellPrice: 2800000,
-    growTime: 43200, // 12h
+    sellPrice: 3500000,
+    growTime: 28800, // 8h (was 12h)
     stages: ["🔥", "🌋", "🌶️"],
     levelRequired: 42,
   },
@@ -149,8 +149,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "⭐",
     seedEmoji: "🌠",
     cost: 1000000,
-    sellPrice: 8500000,
-    growTime: 86400, // 24h
+    sellPrice: 12000000,
+    growTime: 43200, // 12h (was 24h)
     stages: ["🌠", "✨", "⭐"],
     levelRequired: 50,
   },
@@ -160,8 +160,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🌙",
     seedEmoji: "🌑",
     cost: 2500000,
-    sellPrice: 25000000,
-    growTime: 172800, // 2 days
+    sellPrice: 35000000,
+    growTime: 86400, // 24h (was 48h)
     stages: ["🌑", "🌒", "🌙"],
     levelRequired: 60,
   },
@@ -171,8 +171,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "☀️",
     seedEmoji: "🔥",
     cost: 10000000,
-    sellPrice: 120000000,
-    growTime: 345600, // 4 days
+    sellPrice: 180000000,
+    growTime: 172800, // 48h (was 96h)
     stages: ["🔥", "💥", "☀️"],
     levelRequired: 70,
   },
@@ -182,8 +182,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "💎",
     seedEmoji: "🔮",
     cost: 50000000,
-    sellPrice: 750000000,
-    growTime: 604800, // 1 week
+    sellPrice: 1000000000,
+    growTime: 345600, // 4 days (was 1 week)
     stages: ["🔮", "✨", "💎"],
     levelRequired: 80,
   },
@@ -193,8 +193,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🍎",
     seedEmoji: "🪙",
     cost: 250000000,
-    sellPrice: 5000000000,
-    growTime: 1209600, // 2 weeks
+    sellPrice: 8000000000,
+    growTime: 604800, // 1 week (was 2 weeks)
     stages: ["🌱", "🌳", "🍎"],
     levelRequired: 90,
   },
@@ -204,8 +204,8 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "♾️",
     seedEmoji: "🌀",
     cost: 1000000000,
-    sellPrice: 30000000000,
-    growTime: 2592000, // 30 days
+    sellPrice: 50000000000,
+    growTime: 1209600, // 2 weeks (was 30 days)
     stages: ["🌀", "🌌", "♾️"],
     levelRequired: 100,
   },

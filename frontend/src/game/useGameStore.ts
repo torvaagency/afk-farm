@@ -28,9 +28,9 @@ export interface GameState {
 }
 
 const INITIAL_STATE: GameState = {
-  money: 20,
+  money: 100,
   inventory: {
-    wheat: 1,
+    wheat: 5,
   },
   crops: {},
   items: {},
@@ -76,7 +76,7 @@ export function useGameStore() {
   }, [state]);
 
   const getExpToNextLevel = (level: number) => {
-    return Math.floor(Math.pow(level, 2.2) * 250);
+    return Math.floor(Math.pow(level, 1.8) * 150);
   };
 
   useEffect(() => {
@@ -102,6 +102,21 @@ export function useGameStore() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Auto-harvest logic (Diablo-style AFK feature)
+  useEffect(() => {
+    if (state.level < 5) return;
+    
+    const interval = setInterval(() => {
+      state.slots.forEach((slot, index) => {
+        if (slot?.isHarvestable) {
+          harvestCrop(index);
+        }
+      });
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [state.level, state.slots]);
 
   const buySeed = (plantId: string) => {
     const plant = PLANTS[plantId];
@@ -152,7 +167,8 @@ export function useGameStore() {
     const slot = state.slots[slotIndex];
     if (slot && slot.isHarvestable) {
       const plant = PLANTS[slot.plantId];
-      const expGain = Math.floor(plant.cost / 20) + 5;
+      // Diablo scaling: square root of cost + level bonus
+      const expGain = Math.floor(Math.sqrt(plant.cost) * 2) + (plant.levelRequired * 5);
       const foundPotion = Math.random() < 0.15;
       let finalLevel = state.level;
       

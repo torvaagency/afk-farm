@@ -140,10 +140,14 @@ export default function App() {
   return (
     <TooltipProvider>
       <div className={cn(
-        "min-h-screen font-sans transition-colors duration-500",
+        "min-h-screen font-sans transition-colors duration-500 overflow-hidden relative",
         isDarkMode ? "bg-black text-white selection:bg-cyan-900" : "bg-white text-black selection:bg-cyan-200"
       )}>
         <div className="scanline" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(34,211,238,0.1),transparent_70%)] pointer-events-none" />
+        
+        {/* 3D Perspective Wrapper */}
+        <div className="relative z-10 perspective-[2000px]">
 
         {/* Toast Notifications - Arcane Whispers */}
         <div className="fixed top-24 right-6 z-50 flex flex-col gap-2 pointer-events-none items-end">
@@ -177,9 +181,10 @@ export default function App() {
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className={cn(
-            "sticky top-0 z-50 border-b backdrop-blur-md px-6 py-3",
-            isDarkMode ? "border-white/5 bg-black/80" : "border-black/5 bg-white/80"
+            "sticky top-0 z-50 border-b backdrop-blur-md px-6 py-3 shadow-2xl",
+            isDarkMode ? "border-white/5 bg-black/80 shadow-cyan-900/10" : "border-black/5 bg-white/80 shadow-black/5"
           )}
+          style={{ transform: "translateZ(50px)" }}
         >
           <div className="mx-auto flex max-w-6xl items-center justify-between">
             <div className="flex items-center gap-4">
@@ -275,12 +280,14 @@ export default function App() {
           </div>
         </motion.header>
 
-        <main className="mx-auto max-w-6xl p-4 space-y-4">
+        <main className="mx-auto max-w-6xl p-4 space-y-4" style={{ transform: "rotateX(2deg)", transformStyle: "preserve-3d" }}>
           {/* Farm Grid - The Celestial Garden */}
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            whileHover={{ rotateX: 1, rotateY: -1, translateZ: 10 }}
+            style={{ transformStyle: "preserve-3d" }}
           >
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-gamer font-bold flex items-center gap-3 text-glow-cyan">
@@ -462,6 +469,8 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
+            whileHover={{ rotateX: 1, rotateY: 1, translateZ: 10 }}
+            style={{ transformStyle: "preserve-3d" }}
             className="grid grid-cols-1 md:grid-cols-2 gap-3"
           >
             <Card className={cn(
@@ -562,6 +571,8 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
+            whileHover={{ rotateX: -1, rotateY: 1, translateZ: 10 }}
+            style={{ transformStyle: "preserve-3d" }}
             className="space-y-2"
           >
             <Card className={cn(
@@ -670,6 +681,8 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
+            whileHover={{ rotateX: -1, rotateY: -1, translateZ: 10 }}
+            style={{ transformStyle: "preserve-3d" }}
             className="space-y-2"
           >
             <Card className={cn(magicStyle, "neon-border-amber")}>
@@ -878,7 +891,8 @@ export default function App() {
               </motion.div>
             </div>
           )}
-        </AnimatePresence>
+          </AnimatePresence>
+        </div>
       </div>
     </TooltipProvider>
   )

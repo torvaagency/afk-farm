@@ -386,34 +386,36 @@ export default function App() {
                 const unlockCost = nextSlotCost
 
                 if (!isUnlocked) {
+                  if (!isNextToUnlock) return null
+
                   return (
                     <Tooltip key={i}>
                       <TooltipTrigger asChild>
                         <motion.button
-                          whileHover={isNextToUnlock ? { backgroundColor: "rgba(34, 211, 238, 0.1)" } : {}}
-                          whileTap={isNextToUnlock ? { scale: 0.95 } : {}}
-                          onClick={() => isNextToUnlock && buySlot()}
-                          disabled={!isNextToUnlock || state.money < unlockCost}
+                          layout
+                          initial={{ opacity: 0, scale: 0.5 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ backgroundColor: "rgba(34, 211, 238, 0.1)" }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => buySlot()}
+                          disabled={state.money < unlockCost}
                           className={cn(
                             "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 overflow-hidden border",
-                            isNextToUnlock
-                              ? "bg-cyan-500/5 border-cyan-500/30 hover:border-cyan-500 cursor-pointer"
-                              : isDarkMode ? "bg-black border-white/5 cursor-default opacity-10" : "bg-white border-black/5 cursor-default opacity-10"
+                            "bg-cyan-500/5 border-cyan-500/30 hover:border-cyan-500 cursor-pointer"
                           )}
                         >
-                          {isNextToUnlock ? (
-                            <div className="flex flex-col items-center gap-1 text-center">
-                              <div className={cn("text-[9px] font-mono", isDarkMode ? "text-white opacity-40" : "text-black opacity-40")}>
-                                ${unlockCost.toLocaleString()}
-                              </div>
+                          <div className="flex flex-col items-center gap-1 text-center">
+                            <div className={cn("text-[10px] font-gamer font-bold", isDarkMode ? "text-cyan-400" : "text-cyan-600")}>
+                              BUY_NODE
                             </div>
-                          ) : (
-                            <FaLock size={12} className={isDarkMode ? "text-neutral-400 opacity-60" : "text-neutral-600 opacity-60"} />
-                          )}
+                            <div className={cn("text-[9px] font-mono", isDarkMode ? "text-white opacity-40" : "text-black opacity-40")}>
+                              ${unlockCost.toLocaleString()}
+                            </div>
+                          </div>
                         </motion.button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                        {isNextToUnlock ? `Unlock Node for $${unlockCost.toLocaleString()}` : "Node Locked"}
+                        Unlock Next Node for ${unlockCost.toLocaleString()}
                       </TooltipContent>
                     </Tooltip>
                   )

@@ -106,7 +106,7 @@ export function useGameStore() {
   // Auto-harvest logic (Diablo-style AFK feature)
   useEffect(() => {
     if (state.level < 5) return;
-    
+
     const interval = setInterval(() => {
       state.slots.forEach((slot, index) => {
         if (slot?.isHarvestable) {
@@ -114,7 +114,7 @@ export function useGameStore() {
         }
       });
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [state.level, state.slots]);
 
@@ -180,14 +180,14 @@ export function useGameStore() {
       const expGain = Math.floor(Math.sqrt(plant.cost) * 2) + (plant.levelRequired * 5);
       const foundPotion = Math.random() < 0.15;
       let finalLevel = state.level;
-      
+
       setState((prev) => {
         const newSlots = [...prev.slots];
         newSlots[slotIndex] = null;
-        
+
         let newExp = prev.exp + expGain;
         let newLevel = prev.level;
-        
+
         while (newExp >= getExpToNextLevel(newLevel)) {
           newExp -= getExpToNextLevel(newLevel);
           newLevel++;
@@ -221,7 +221,7 @@ export function useGameStore() {
       if (foundPotion) {
         addToast("Found a Speed Potion!", "item");
       }
-      
+
       return true;
     }
     return false;
@@ -258,7 +258,7 @@ export function useGameStore() {
   const sellCrop = (plantId: string) => {
     const plant = PLANTS[plantId];
     let success = false;
-    
+
     setState((prev) => {
       const currentCount = prev.crops[plantId] || 0;
       if (currentCount > 0) {
@@ -300,7 +300,7 @@ export function useGameStore() {
   const buySlot = () => {
     const cost = Math.floor(Math.pow(state.unlockedSlots, 2.5) * 100);
     let success = false;
-    
+
     setState((prev) => {
       if (prev.money >= cost && prev.unlockedSlots < 16) {
         success = true;

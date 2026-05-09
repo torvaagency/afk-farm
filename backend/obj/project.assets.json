@@ -24,6 +24,19 @@
           "build/Microsoft.AspNetCore.OpenApi.targets": {}
         }
       },
+      "Microsoft.AspNetCore.SignalR.Common/10.0.7": {
+        "type": "package",
+        "compile": {
+          "lib/net10.0/_._": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
       "Microsoft.OpenApi/2.0.0": {
         "type": "package",
         "compile": {
@@ -58,6 +71,25 @@
         "microsoft.aspnetcore.openapi.nuspec"
       ]
     },
+    "Microsoft.AspNetCore.SignalR.Common/10.0.7": {
+      "sha512": "00bk3BwiPg4qfYelpsD6bQdvlRz3I2bwH4/+twxPw57KY+WU1XrQIDuAR8SMBG+Bbt42gyu9vSEO6Lz/CEfsag==",
+      "type": "package",
+      "path": "microsoft.aspnetcore.signalr.common/10.0.7",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net10.0/Microsoft.AspNetCore.SignalR.Common.dll",
+        "lib/net10.0/Microsoft.AspNetCore.SignalR.Common.xml",
+        "lib/net462/Microsoft.AspNetCore.SignalR.Common.dll",
+        "lib/net462/Microsoft.AspNetCore.SignalR.Common.xml",
+        "lib/netstandard2.0/Microsoft.AspNetCore.SignalR.Common.dll",
+        "lib/netstandard2.0/Microsoft.AspNetCore.SignalR.Common.xml",
+        "microsoft.aspnetcore.signalr.common.10.0.7.nupkg.sha512",
+        "microsoft.aspnetcore.signalr.common.nuspec"
+      ]
+    },
     "Microsoft.OpenApi/2.0.0": {
       "sha512": "GGYLfzV/G/ct80OZ45JxnWP7NvMX1BCugn/lX7TH5o0lcVaviavsLMTxmFV2AybXWjbi3h6FF1vgZiTK6PXndw==",
       "type": "package",
@@ -79,7 +111,8 @@
   },
   "projectFileDependencyGroups": {
     "net10.0": [
-      "Microsoft.AspNetCore.OpenApi >= 10.0.5"
+      "Microsoft.AspNetCore.OpenApi >= 10.0.5",
+      "Microsoft.AspNetCore.SignalR.Common >= 10.0.7"
     ]
   },
   "packageFolders": {
@@ -89,11 +122,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Matthew Holmes\\Documents\\apps\\farming-game\\backend\\backend.csproj",
+      "projectUniqueName": "c:\\Users\\Matthew Holmes\\Documents\\apps\\farming-game\\backend\\backend.csproj",
       "projectName": "backend",
-      "projectPath": "C:\\Users\\Matthew Holmes\\Documents\\apps\\farming-game\\backend\\backend.csproj",
+      "projectPath": "c:\\Users\\Matthew Holmes\\Documents\\apps\\farming-game\\backend\\backend.csproj",
       "packagesPath": "C:\\Users\\Matthew Holmes\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Matthew Holmes\\Documents\\apps\\farming-game\\backend\\obj\\",
+      "outputPath": "c:\\Users\\Matthew Holmes\\Documents\\apps\\farming-game\\backend\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -136,6 +169,10 @@
           "Microsoft.AspNetCore.OpenApi": {
             "target": "Package",
             "version": "[10.0.5, )"
+          },
+          "Microsoft.AspNetCore.SignalR.Common": {
+            "target": "Package",
+            "version": "[10.0.7, )"
           }
         },
         "imports": [
@@ -574,5 +611,17 @@
         }
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "PackageReference Microsoft.AspNetCore.SignalR.Common will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.",
+      "libraryId": "Microsoft.AspNetCore.SignalR.Common",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
 }

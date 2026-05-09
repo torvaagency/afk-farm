@@ -23,7 +23,8 @@ import {
 } from "react-icons/fa"
 import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
 import { HiSparkles } from "react-icons/hi"
-import { FaSun, FaMoon } from "react-icons/fa"
+import { HubConnectionBuilder, HubConnection, LogLevel } from "@microsoft/signalr"
+import { FaSun, FaMoon, FaCommentAlt, FaPaperPlane } from "react-icons/fa"
 
 const MagicGrowth = () => (
   <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -107,6 +108,54 @@ export default function App() {
     return true
   })
   const scrollRef = useRef<HTMLDivElement>(null)
+  const chatScrollRef = useRef<HTMLDivElement>(null)
+
+  // Chat State
+  const [messages, setMessages] = useState<{ user: string; message: string; timestamp: number }[]>([])
+  const [currentMessage, setCurrentMessage] = useState("")
+  const [connection, setConnection] = useState<HubConnection | null>(null)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [username] = useState(() => `Player_${Math.floor(Math.random() * 9000) + 1000}`)
+
+  useEffect(() => {
+    const newConnection = new HubConnectionBuilder()
+      .withUrl("https://localhost:7164/chatHub") // Default ASP.NET core HTTPS port
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Information)
+      .build()
+
+    setConnection(newConnection)
+  }, [])
+
+  useEffect(() => {
+    if (connection) {
+      connection.start()
+        .then(() => {
+          console.log("Connected to SignalR!")
+          connection.on("ReceiveMessage", (user, message) => {
+            setMessages(prev => [...prev, { user, message, timestamp: Date.now() }].slice(-50))
+          })
+        })
+        .catch(e => console.log("Connection failed: ", e))
+    }
+  }, [connection])
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
+    }
+  }, [messages, isChatOpen])
+
+  const sendMessage = async () => {
+    if (connection && currentMessage.trim()) {
+      try {
+        await connection.invoke("SendMessage", username, currentMessage)
+        setCurrentMessage("")
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }
 
   const toggleTheme = () => {
     setIsDarkMode((prev) => {
@@ -140,14 +189,10 @@ export default function App() {
   return (
     <TooltipProvider>
       <div className={cn(
-        "min-h-screen font-sans transition-colors duration-500 overflow-hidden relative",
+        "min-h-screen font-sans transition-colors duration-500",
         isDarkMode ? "bg-black text-white selection:bg-cyan-900" : "bg-white text-black selection:bg-cyan-200"
       )}>
         <div className="scanline" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(34,211,238,0.1),transparent_70%)] pointer-events-none" />
-        
-        {/* 3D Perspective Wrapper */}
-        <div className="relative z-10 perspective-[2000px]">
 
         {/* Toast Notifications - Arcane Whispers */}
         <div className="fixed top-24 right-6 z-50 flex flex-col gap-2 pointer-events-none items-end">
@@ -181,10 +226,9 @@ export default function App() {
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className={cn(
-            "sticky top-0 z-50 border-b backdrop-blur-md px-6 py-3 shadow-2xl",
-            isDarkMode ? "border-white/5 bg-black/80 shadow-cyan-900/10" : "border-black/5 bg-white/80 shadow-black/5"
+            "sticky top-0 z-50 border-b backdrop-blur-md px-6 py-3",
+            isDarkMode ? "border-white/5 bg-black/80" : "border-black/5 bg-white/80"
           )}
-          style={{ transform: "translateZ(50px)" }}
         >
           <div className="mx-auto flex max-w-6xl items-center justify-between">
             <div className="flex items-center gap-4">
@@ -280,14 +324,12 @@ export default function App() {
           </div>
         </motion.header>
 
-        <main className="mx-auto max-w-6xl p-4 space-y-4" style={{ transform: "rotateX(2deg)", transformStyle: "preserve-3d" }}>
+        <main className="mx-auto max-w-6xl p-4 space-y-4">
           {/* Farm Grid - The Celestial Garden */}
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            whileHover={{ rotateX: 1, rotateY: -1, translateZ: 10 }}
-            style={{ transformStyle: "preserve-3d" }}
           >
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-gamer font-bold flex items-center gap-3 text-glow-cyan">
@@ -469,8 +511,6 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            whileHover={{ rotateX: 1, rotateY: 1, translateZ: 10 }}
-            style={{ transformStyle: "preserve-3d" }}
             className="grid grid-cols-1 md:grid-cols-2 gap-3"
           >
             <Card className={cn(
@@ -571,8 +611,6 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            whileHover={{ rotateX: -1, rotateY: 1, translateZ: 10 }}
-            style={{ transformStyle: "preserve-3d" }}
             className="space-y-2"
           >
             <Card className={cn(
@@ -681,8 +719,6 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            whileHover={{ rotateX: -1, rotateY: -1, translateZ: 10 }}
-            style={{ transformStyle: "preserve-3d" }}
             className="space-y-2"
           >
             <Card className={cn(magicStyle, "neon-border-amber")}>
@@ -891,7 +927,94 @@ export default function App() {
               </motion.div>
             </div>
           )}
+        </AnimatePresence>
+
+        {/* Global Chat HUD */}
+        <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3">
+          <AnimatePresence>
+            {isChatOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                className={cn(
+                  "w-80 h-96 flex flex-col border shadow-2xl overflow-hidden",
+                  magicStyle,
+                  isDarkMode ? "bg-black/90 border-cyan-500/30" : "bg-white/95 border-cyan-500/50"
+                )}
+              >
+                <div className="p-3 border-b border-white/10 bg-cyan-500/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-gamer font-bold text-cyan-400 tracking-widest uppercase">Global_Comm_Link</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-neutral-500">ID: {username}</span>
+                </div>
+
+                <ScrollArea className="flex-1 p-4" ref={chatScrollRef}>
+                  <div className="space-y-3">
+                    {messages.length === 0 ? (
+                      <div className="text-[9px] font-mono text-neutral-600 italic text-center py-4 uppercase tracking-widest">Awaiting signal...</div>
+                    ) : (
+                      messages.map((msg, i) => (
+                        <div key={i} className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-[8px] px-1 font-bold rounded-none border",
+                              msg.user === username ? "text-cyan-400 border-cyan-500/30 bg-cyan-500/5" : "text-purple-400 border-purple-500/30 bg-purple-500/5"
+                            )}>
+                              {msg.user}
+                            </span>
+                            <span className="text-[7px] font-mono text-neutral-700">[{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}]</span>
+                          </div>
+                          <p className={cn(
+                            "text-[10px] font-mono leading-relaxed break-words pl-1 border-l border-white/5",
+                            isDarkMode ? "text-neutral-300" : "text-neutral-700"
+                          )}>
+                            {msg.message}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+
+                <div className="p-3 border-t border-white/10 bg-black/20 flex gap-2">
+                  <input
+                    type="text"
+                    value={currentMessage}
+                    onChange={(e) => setCurrentMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                    placeholder="ENTER MESSAGE..."
+                    className={cn(
+                      "flex-1 bg-transparent border border-white/10 px-3 py-1.5 text-[10px] font-mono focus:outline-none focus:border-cyan-500/50 transition-colors",
+                      isDarkMode ? "text-white" : "text-black"
+                    )}
+                  />
+                  <Button
+                    size="icon"
+                    onClick={sendMessage}
+                    disabled={!currentMessage.trim()}
+                    className="h-8 w-8 bg-cyan-600 hover:bg-cyan-500 text-black rounded-none"
+                  >
+                    <FaPaperPlane size={10} />
+                  </Button>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
+
+          <Button
+            size="icon"
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={cn(
+              "h-12 w-12 rounded-none shadow-2xl transition-all duration-300 border-2",
+              isChatOpen ? "bg-red-500/20 border-red-500 text-red-500" : "bg-cyan-600 border-cyan-400 text-black hover:scale-110",
+              "arcane-glow"
+            )}
+          >
+            <FaCommentAlt size={18} />
+          </Button>
         </div>
       </div>
     </TooltipProvider>

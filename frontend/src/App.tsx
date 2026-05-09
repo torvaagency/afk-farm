@@ -230,7 +230,7 @@ export default function App() {
                       "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 overflow-hidden border",
                       isNextToUnlock
                         ? "bg-cyan-500/5 border-cyan-500/30 hover:border-cyan-500 cursor-pointer"
-                        : isDarkMode ? "bg-black border-white/5 cursor-not-allowed opacity-10" : "bg-white border-black/5 cursor-not-allowed opacity-10"
+                        : isDarkMode ? "bg-black border-white/5 cursor-default opacity-10" : "bg-white border-black/5 cursor-default opacity-10"
                     )}
                   >
                     {isNextToUnlock ? (

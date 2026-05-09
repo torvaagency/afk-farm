@@ -124,20 +124,29 @@ export function useGameStore() {
       addToast(`Requires Level ${plant.levelRequired}!`, "info");
       return false;
     }
-    if (state.money >= plant.cost) {
-      setState((prev) => ({
-        ...prev,
-        money: prev.money - plant.cost,
-        inventory: {
-          ...prev.inventory,
-          [plantId]: (prev.inventory[plantId] || 0) + 1,
-        },
-      }));
+
+    let success = false;
+    setState((prev) => {
+      if (prev.money >= plant.cost) {
+        success = true;
+        return {
+          ...prev,
+          money: prev.money - plant.cost,
+          inventory: {
+            ...prev.inventory,
+            [plantId]: (prev.inventory[plantId] || 0) + 1,
+          },
+        };
+      }
+      return prev;
+    });
+
+    if (success) {
       addToast(`Bought ${plant.name} seed!`, "success");
-      return true;
+    } else {
+      addToast("Not enough money!", "info");
     }
-    addToast("Not enough money!", "info");
-    return false;
+    return success;
   };
 
   const plantSeed = (slotIndex: number, plantId: string) => {
@@ -219,42 +228,57 @@ export function useGameStore() {
   };
 
   const useItem = (itemId: string) => {
-    if (state.items[itemId] > 0) {
-      if (itemId === "speed_potion") {
-        setState((prev) => ({
-          ...prev,
-          items: {
-            ...prev.items,
-            [itemId]: prev.items[itemId] - 1,
-          },
-          activeEffects: {
-            ...prev.activeEffects,
-            speedBoostUntil: Date.now() + 60000,
-          },
-        }));
-        addToast("Speed Boost Activated! (60s)", "success");
-        return true;
+    let success = false;
+    setState((prev) => {
+      if ((prev.items[itemId] || 0) > 0) {
+        success = true;
+        if (itemId === "speed_potion") {
+          return {
+            ...prev,
+            items: {
+              ...prev.items,
+              [itemId]: prev.items[itemId] - 1,
+            },
+            activeEffects: {
+              ...prev.activeEffects,
+              speedBoostUntil: Date.now() + 60000,
+            },
+          };
+        }
       }
+      return prev;
+    });
+
+    if (success && itemId === "speed_potion") {
+      addToast("Speed Boost Activated! (60s)", "success");
     }
-    return false;
+    return success;
   };
 
   const sellCrop = (plantId: string) => {
-    const count = state.crops[plantId] || 0;
-    if (count > 0) {
-      const plant = PLANTS[plantId];
-      setState((prev) => ({
-        ...prev,
-        money: prev.money + plant.sellPrice,
-        crops: {
-          ...prev.crops,
-          [plantId]: prev.crops[plantId] - 1,
-        },
-      }));
+    const plant = PLANTS[plantId];
+    let success = false;
+    
+    setState((prev) => {
+      const currentCount = prev.crops[plantId] || 0;
+      if (currentCount > 0) {
+        success = true;
+        return {
+          ...prev,
+          money: prev.money + plant.sellPrice,
+          crops: {
+            ...prev.crops,
+            [plantId]: currentCount - 1,
+          },
+        };
+      }
+      return prev;
+    });
+
+    if (success) {
       addToast(`Sold ${plant.name} for $${plant.sellPrice}`, "success");
-      return true;
     }
-    return false;
+    return success;
   };
 
   const sellAllCrops = () => {
@@ -275,17 +299,26 @@ export function useGameStore() {
 
   const buySlot = () => {
     const cost = Math.floor(Math.pow(state.unlockedSlots, 2.5) * 100);
-    if (state.money >= cost && state.unlockedSlots < 16) {
-      setState((prev) => ({
-        ...prev,
-        money: prev.money - cost,
-        unlockedSlots: prev.unlockedSlots + 1,
-      }));
+    let success = false;
+    
+    setState((prev) => {
+      if (prev.money >= cost && prev.unlockedSlots < 16) {
+        success = true;
+        return {
+          ...prev,
+          money: prev.money - cost,
+          unlockedSlots: prev.unlockedSlots + 1,
+        };
+      }
+      return prev;
+    });
+
+    if (success) {
       addToast(`Unlocked slot ${state.unlockedSlots + 1}!`, "success");
-      return true;
+    } else {
+      addToast("Not enough money!", "info");
     }
-    addToast("Not enough money!", "info");
-    return false;
+    return success;
   };
 
   const resetGame = () => {

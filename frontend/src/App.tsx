@@ -111,7 +111,7 @@ export default function App() {
   const chatScrollRef = useRef<HTMLDivElement>(null)
 
   // Chat State
-  const [messages, setMessages] = useState<{ user: string; message: string; timestamp: number }[]>([])
+  const [messages, setMessages] = useState<{ id: string; user: string; message: string; timestamp: number }[]>([])
   const [currentMessage, setCurrentMessage] = useState("")
   const [connection, setConnection] = useState<HubConnection | null>(null)
   const [isChatOpen, setIsChatOpen] = useState(false)
@@ -133,7 +133,7 @@ export default function App() {
         .then(() => {
           console.log("SignalR: Successfully connected to global channel.")
           connection.on("ReceiveMessage", (user, message) => {
-            setMessages(prev => [...prev, { user, message, timestamp: Date.now() }].slice(-50))
+            setMessages(prev => [...prev, { id: crypto.randomUUID(), user, message, timestamp: Date.now() }].slice(-50))
           })
         })
         .catch(e => {
@@ -826,27 +826,34 @@ export default function App() {
                         Initializing secure connection... awaiting signal...
                       </div>
                     ) : (
-                      messages.map((msg, i) => (
-                        <div key={i} className="flex items-start gap-4 text-[10px] font-mono group border-l border-transparent hover:border-cyan-500/30 pl-2 transition-colors">
-                          <span className={cn(
-                            "shrink-0 font-bold tracking-tighter uppercase text-[9px]",
-                            msg.user === username ? "text-cyan-400" : "text-purple-400"
-                          )}>
-                            [{msg.user}]
-                          </span>
-                          <div className="flex flex-col gap-0.5">
-                            <p className={cn(
-                              "leading-relaxed",
-                              isDarkMode ? "text-neutral-300" : "text-neutral-700"
+                      <AnimatePresence initial={false}>
+                        {messages.map((msg) => (
+                          <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="flex items-start gap-4 text-[10px] font-mono group border-l border-transparent hover:border-cyan-500/30 pl-2 transition-colors py-1"
+                          >
+                            <span className={cn(
+                              "shrink-0 font-bold tracking-tighter uppercase text-[9px]",
+                              msg.user === username ? "text-cyan-400" : "text-purple-400"
                             )}>
-                              {msg.message}
-                            </p>
-                            <span className="text-[7px] text-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
-                              Received_{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false })}
+                              [{msg.user}]
                             </span>
-                          </div>
-                        </div>
-                      ))
+                            <div className="flex flex-col gap-0.5">
+                              <p className={cn(
+                                "leading-relaxed",
+                                isDarkMode ? "text-neutral-300" : "text-neutral-700"
+                              )}>
+                                {msg.message}
+                              </p>
+                              <span className="text-[7px] text-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
+                                Received_{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false })}
+                              </span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                     )}
                   </div>
                 </ScrollArea>

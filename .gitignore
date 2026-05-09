@@ -1,0 +1,17 @@
+# .NET
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# IDE
+.vscode/
+.idea/
+.DS_Store

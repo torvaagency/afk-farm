@@ -75,7 +75,7 @@ export default function App() {
       <div className="scanline" />
 
       {/* Toast Notifications - Arcane Whispers */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none items-end">
+      <div className="fixed top-24 right-6 z-50 flex flex-col gap-2 pointer-events-none items-end">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
@@ -84,7 +84,7 @@ export default function App() {
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ opacity: 0, x: 50, transition: { duration: 0.3 } }}
               className={cn(
-                "px-5 py-2 border-r-2 shadow-[0_0_20px_rgba(0,0,0,0.5)] font-gamer text-[10px] uppercase tracking-tighter backdrop-blur-xl",
+                "px-8 py-1 border-r-2 shadow-[0_0_20px_rgba(0,0,0,0.5)] font-gamer text-[10px] uppercase tracking-tighter backdrop-blur-xl min-w-[180px]",
                 isDarkMode ? "bg-black/90" : "bg-white/90 border-l border-t border-b border-black/5",
                 toast.type === "success" && "border-emerald-500 text-emerald-400 text-glow-cyan",
                 toast.type === "info" && "border-cyan-500 text-cyan-400 text-glow-cyan",

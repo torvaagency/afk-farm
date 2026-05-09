@@ -136,7 +136,8 @@ export default function App() {
         .then(() => {
           console.log("SignalR: Successfully connected to global channel.")
           connection.on("ReceiveMessage", (user, message) => {
-            setMessages(prev => [...prev, { id: crypto.randomUUID(), user, message, timestamp: Date.now() }].slice(-50))
+            const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            setMessages(prev => [...prev, { id, user, message, timestamp: Date.now() }].slice(-50))
           })
         })
         .catch(e => {

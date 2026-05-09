@@ -119,7 +119,7 @@ export default function App() {
 
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
-      .withUrl("https://localhost:7180/chatHub") // Fixed port from launchSettings.json
+      .withUrl("http://localhost:5176/chatHub") // Switched to verified active HTTP port
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build()
@@ -131,12 +131,15 @@ export default function App() {
     if (connection) {
       connection.start()
         .then(() => {
-          console.log("Connected to SignalR!")
+          console.log("SignalR: Successfully connected to global channel.")
           connection.on("ReceiveMessage", (user, message) => {
             setMessages(prev => [...prev, { user, message, timestamp: Date.now() }].slice(-50))
           })
         })
-        .catch(e => console.log("Connection failed: ", e))
+        .catch(e => {
+          console.error("SignalR Connection Error: ", e)
+          addToast("Network Error: Global chat offline.", "xp")
+        })
     }
   }, [connection])
 

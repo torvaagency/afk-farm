@@ -120,7 +120,7 @@ export default function App() {
   useEffect(() => {
     // Use environment variable for production, fallback to local for dev
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5176";
-    
+
     const newConnection = new HubConnectionBuilder()
       .withUrl(`${BACKEND_URL}/chatHub`)
       .withAutomaticReconnect()
@@ -815,7 +815,7 @@ export default function App() {
             className="mt-8"
           >
             <Card className={cn(magicStyle, "border-cyan-500/20 overflow-hidden")}>
-              <CardHeader 
+              <CardHeader
                 className="py-2 px-5 border-b border-white/5 bg-white/5 flex flex-row items-center justify-between cursor-pointer hover:bg-white/10 transition-colors"
                 onClick={() => setIsChatOpen(!isChatOpen)}
               >
@@ -841,76 +841,76 @@ export default function App() {
                     className="overflow-hidden"
                   >
                     <CardContent className="p-0">
-                <ScrollArea className="h-48 w-full bg-black/20" ref={chatScrollRef}>
-                  <div className="p-4 space-y-3">
-                    {messages.length === 0 ? (
-                      <div className="text-[9px] font-mono text-neutral-700 italic text-center py-8 uppercase tracking-[0.3em] opacity-50">
-                        Initializing secure connection... awaiting signal...
-                      </div>
-                    ) : (
-                      <AnimatePresence initial={false}>
-                        {messages.map((msg) => (
-                          <motion.div
-                            key={msg.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="flex items-start gap-4 text-[10px] font-mono group border-l border-transparent hover:border-cyan-500/30 pl-2 transition-colors py-1"
-                          >
-                            <span className={cn(
-                              "shrink-0 font-bold tracking-tighter uppercase text-[9px]",
-                              msg.user === username ? "text-cyan-400" : "text-purple-400"
-                            )}>
-                              [{msg.user}]
-                            </span>
-                            <div className="flex flex-col gap-0.5">
-                              <p className={cn(
-                                "leading-relaxed",
-                                isDarkMode ? "text-neutral-300" : "text-neutral-700"
-                              )}>
-                                {msg.message}
-                              </p>
-                              <span className="text-[7px] text-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
-                                Received_{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false })}
-                              </span>
+                      <ScrollArea className="h-48 w-full bg-black/20" ref={chatScrollRef}>
+                        <div className="p-4 space-y-3">
+                          {messages.length === 0 ? (
+                            <div className="text-[9px] font-mono text-neutral-700 italic text-center py-8 uppercase tracking-[0.3em] opacity-50">
+                              Initializing secure connection... awaiting signal...
                             </div>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    )}
-                  </div>
-                </ScrollArea>
-                <div className="p-3 bg-black/40 border-t border-white/5 flex gap-2">
-                  <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-cyan-500/50">
-                      <FaTerminal size={10} />
-                    </div>
-                    <input
-                      type="text"
-                      value={currentMessage}
-                      onChange={(e) => setCurrentMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                      placeholder="ENTER COMMAND OR MESSAGE..."
-                      className={cn(
-                        "w-full bg-black/40 border border-white/10 pl-8 pr-3 py-2 text-[10px] font-mono focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-neutral-800",
-                        isDarkMode ? "text-cyan-100" : "text-black"
-                      )}
-                    />
-                  </div>
-                  <Button
-                    onClick={sendMessage}
-                    disabled={!currentMessage.trim()}
-                    className="bg-cyan-900/20 hover:bg-cyan-500 text-cyan-400 hover:text-black border border-cyan-500/30 rounded-none px-6 text-[10px] font-gamer tracking-widest transition-all"
-                  >
-                    SEND_PKT
-                  </Button>
-                </div>
-              </CardContent>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Card>
-    </motion.section>
-  </main>
+                          ) : (
+                            <AnimatePresence initial={false}>
+                              {messages.map((msg) => (
+                                <motion.div
+                                  key={msg.id}
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  className="flex items-start gap-4 text-[10px] font-mono group border-l border-transparent hover:border-cyan-500/30 pl-2 transition-colors py-1"
+                                >
+                                  <span className={cn(
+                                    "shrink-0 font-bold tracking-tighter uppercase text-[9px]",
+                                    msg.user === username ? "text-cyan-400" : "text-purple-400"
+                                  )}>
+                                    [{msg.user}]
+                                  </span>
+                                  <div className="flex flex-col gap-0.5">
+                                    <p className={cn(
+                                      "leading-relaxed",
+                                      isDarkMode ? "text-neutral-300" : "text-neutral-700"
+                                    )}>
+                                      {msg.message}
+                                    </p>
+                                    <span className="text-[7px] text-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
+                                      Received_{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false })}
+                                    </span>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
+                          )}
+                        </div>
+                      </ScrollArea>
+                      <div className="p-3 bg-black/40 border-t border-white/5 flex gap-2">
+                        <div className="relative flex-1">
+                          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-cyan-500/50">
+                            <FaTerminal size={10} />
+                          </div>
+                          <input
+                            type="text"
+                            value={currentMessage}
+                            onChange={(e) => setCurrentMessage(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                            placeholder="ENTER COMMAND OR MESSAGE..."
+                            className={cn(
+                              "w-full bg-black/40 border border-white/10 pl-8 pr-3 py-2 text-[10px] font-mono focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-neutral-800",
+                              isDarkMode ? "text-cyan-100" : "text-black"
+                            )}
+                          />
+                        </div>
+                        <Button
+                          onClick={sendMessage}
+                          disabled={!currentMessage.trim()}
+                          className="bg-cyan-900/20 hover:bg-cyan-500 text-cyan-400 hover:text-black border border-cyan-500/30 rounded-none px-6 text-[10px] font-gamer tracking-widest transition-all"
+                        >
+                          SEND_PKT
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Card>
+          </motion.section>
+        </main>
 
         {/* Footer - HUD Console */}
         <footer className={cn(

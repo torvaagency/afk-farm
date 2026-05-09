@@ -172,7 +172,7 @@ export const PLANTS: Record<string, PlantType> = {
     seedEmoji: "🔥",
     cost: 10000000,
     sellPrice: 180000000,
-    growTime: 172800, // 48h (was 96h)
+    growTime: 28800, // 8h
     stages: ["🔥", "💥", "☀️"],
     levelRequired: 70,
   },
@@ -183,7 +183,7 @@ export const PLANTS: Record<string, PlantType> = {
     seedEmoji: "🔮",
     cost: 50000000,
     sellPrice: 1000000000,
-    growTime: 345600, // 4 days (was 1 week)
+    growTime: 43200, // 12h
     stages: ["🔮", "✨", "💎"],
     levelRequired: 80,
   },
@@ -194,7 +194,7 @@ export const PLANTS: Record<string, PlantType> = {
     seedEmoji: "🪙",
     cost: 250000000,
     sellPrice: 8000000000,
-    growTime: 604800, // 1 week (was 2 weeks)
+    growTime: 64800, // 18h
     stages: ["🌱", "🌳", "🍎"],
     levelRequired: 90,
   },
@@ -205,7 +205,7 @@ export const PLANTS: Record<string, PlantType> = {
     seedEmoji: "🌀",
     cost: 1000000000,
     sellPrice: 50000000000,
-    growTime: 1209600, // 2 weeks (was 30 days)
+    growTime: 86400, // 24h
     stages: ["🌀", "🌌", "♾️"],
     levelRequired: 100,
   },

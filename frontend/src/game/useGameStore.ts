@@ -76,7 +76,7 @@ export function useGameStore() {
   }, [state]);
 
   const getExpToNextLevel = (level: number) => {
-    return Math.floor(Math.pow(level, 1.8) * 150);
+    return Math.floor(Math.pow(level, 1.4) * 80);
   };
 
   useEffect(() => {

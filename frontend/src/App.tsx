@@ -5,6 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 import { useGameStore } from "./game/useGameStore"
 import { PLANTS } from "./game/constants"
 import { cn } from "@/lib/utils"
@@ -545,28 +551,40 @@ export default function App() {
                         if (count === 0) return null
                         const plant = PLANTS[id]
                         return (
-                          <Tooltip key={id}>
-                            <TooltipTrigger asChild>
-                              <motion.button
-                                layout
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0 }}
-                                whileHover={{ backgroundColor: "rgba(34, 211, 238, 0.05)", borderColor: "rgba(34, 211, 238, 0.5)" }}
-                                onClick={() => setSelectedSeed(id)}
-                                className={cn(
-                                  "px-3 py-1 border flex items-center gap-3 transition-all",
-                                  selectedSeed === id ? "border-cyan-500 text-cyan-400 bg-cyan-500/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]" : (isDarkMode ? "border-white/5 text-neutral-400" : "border-black/5 text-neutral-600")
-                                )}
+                          <ContextMenu key={id}>
+                            <ContextMenuTrigger asChild>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <motion.button
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    whileHover={{ backgroundColor: "rgba(34, 211, 238, 0.05)", borderColor: "rgba(34, 211, 238, 0.5)" }}
+                                    onClick={() => setSelectedSeed(id)}
+                                    className={cn(
+                                      "px-3 py-1 border flex items-center gap-3 transition-all",
+                                      selectedSeed === id ? "border-cyan-500 text-cyan-400 bg-cyan-500/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]" : (isDarkMode ? "border-white/5 text-neutral-400" : "border-black/5 text-neutral-600")
+                                    )}
+                                  >
+                                    <span className="text-lg arcane-glow">{plant.emoji}</span>
+                                    <span className="text-[10px] font-mono font-bold">x{count}</span>
+                                  </motion.button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
+                                  Select {plant.name} Seeds (Right-click for options)
+                                </TooltipContent>
+                              </Tooltip>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[120px]">
+                              <ContextMenuItem 
+                                onClick={() => sellSeed(id)}
+                                className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer"
                               >
-                                <span className="text-lg arcane-glow">{plant.emoji}</span>
-                                <span className="text-[10px] font-mono font-bold">x{count}</span>
-                              </motion.button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                              Select {plant.name} Seeds
-                            </TooltipContent>
-                          </Tooltip>
+                                Sell 1x for ${Math.floor(plant.cost * 0.5)}
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
                         )
                       })}
                     </AnimatePresence>

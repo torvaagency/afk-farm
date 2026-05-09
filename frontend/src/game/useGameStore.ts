@@ -321,6 +321,32 @@ export function useGameStore() {
     return success;
   };
 
+  const sellSeed = (plantId: string) => {
+    const plant = PLANTS[plantId];
+    let success = false;
+    const sellPrice = Math.floor(plant.cost * 0.5);
+
+    setState((prev) => {
+      if ((prev.inventory[plantId] || 0) > 0) {
+        success = true;
+        return {
+          ...prev,
+          money: prev.money + sellPrice,
+          inventory: {
+            ...prev.inventory,
+            [plantId]: prev.inventory[plantId] - 1,
+          },
+        };
+      }
+      return prev;
+    });
+
+    if (success) {
+      addToast(`Sold ${plant.name} seed for $${sellPrice}`, "success");
+    }
+    return success;
+  };
+
   const resetGame = () => {
     localStorage.removeItem("farming_game_state");
     setState(INITIAL_STATE);
@@ -333,6 +359,7 @@ export function useGameStore() {
     plantSeed,
     harvestCrop,
     sellCrop,
+    sellSeed,
     sellAllCrops,
     buySlot,
     nextSlotCost: Math.floor(Math.pow(state.unlockedSlots, 2.5) * 100),

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,13 +22,40 @@ import {
 } from "react-icons/fa"
 import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
 import { HiSparkles } from "react-icons/hi"
+import { FaSun, FaMoon } from "react-icons/fa"
 
 export default function App() {
   const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame } = useGameStore()
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("theme")
+      return saved ? saved === "dark" : true
+    }
+    return true
+  })
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev
+      localStorage.setItem("theme", next ? "dark" : "light")
+      return next
+    })
+  }
+
+  useEffect(() => {
+    const root = window.document.documentElement
+    if (isDarkMode) {
+      root.classList.add("dark")
+      root.classList.remove("light")
+    } else {
+      root.classList.add("light")
+      root.classList.remove("dark")
+    }
+  }, [isDarkMode])
 
   const magicStyle = "magic-panel rounded-none"
 
@@ -41,7 +68,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-cyan-900 overflow-x-hidden">
+    <div className={cn(
+      "min-h-screen font-sans overflow-x-hidden transition-colors duration-500",
+      isDarkMode ? "bg-black text-white selection:bg-cyan-900" : "bg-white text-black selection:bg-cyan-200"
+    )}>
       <div className="scanline" />
 
       {/* Toast Notifications - Arcane Whispers */}
@@ -54,7 +84,8 @@ export default function App() {
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ opacity: 0, x: 50, transition: { duration: 0.3 } }}
               className={cn(
-                "px-5 py-2 border-r-2 shadow-[0_0_20px_rgba(0,0,0,0.5)] font-gamer text-[10px] uppercase tracking-tighter bg-black/90 backdrop-blur-xl",
+                "px-5 py-2 border-r-2 shadow-[0_0_20px_rgba(0,0,0,0.5)] font-gamer text-[10px] uppercase tracking-tighter backdrop-blur-xl",
+                isDarkMode ? "bg-black/90" : "bg-white/90 border-l border-t border-b border-black/5",
                 toast.type === "success" && "border-emerald-500 text-emerald-400 text-glow-cyan",
                 toast.type === "info" && "border-cyan-500 text-cyan-400 text-glow-cyan",
                 toast.type === "xp" && "border-amber-500 text-amber-400",
@@ -74,7 +105,10 @@ export default function App() {
       <motion.header
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-10 border-b border-white/5 bg-black/80 backdrop-blur-md px-6 py-3"
+        className={cn(
+          "sticky top-0 z-10 border-b backdrop-blur-md px-6 py-3",
+          isDarkMode ? "border-white/5 bg-black/80" : "border-black/5 bg-white/80"
+        )}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-4">
@@ -103,7 +137,10 @@ export default function App() {
                   EXP_{state.exp}/{expToNextLevel}
                 </div>
               </div>
-              <div className="flex-1 h-1 bg-neutral-900 overflow-hidden border border-white/5 relative">
+              <div className={cn(
+                "flex-1 h-1 overflow-hidden border relative",
+                isDarkMode ? "bg-neutral-900 border-white/5" : "bg-neutral-100 border-black/5"
+              )}>
                 <motion.div
                   className="h-full bg-cyan-500 shadow-[0_0_15px_#22d3ee]"
                   initial={{ width: 0 }}
@@ -113,10 +150,25 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 px-5 py-2 bg-black border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+            <div className={cn(
+              "flex items-center gap-3 px-5 py-2 border shadow-[0_0_15px_rgba(34,211,238,0.1)] transition-colors duration-500",
+              isDarkMode ? "bg-black border-cyan-500/20" : "bg-white border-cyan-500/40"
+            )}>
               <FaCoins size={16} className="text-amber-500 arcane-glow" />
               <span className="font-gamer font-bold text-lg tracking-tight text-amber-500 text-glow-cyan">${state.money.toLocaleString()}</span>
             </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className={cn(
+                "h-10 w-10 rounded-none border text-cyan-400 transition-all",
+                isDarkMode ? "border-white/10 hover:bg-white/5" : "border-black/10 hover:bg-black/5"
+              )}
+            >
+              {isDarkMode ? <FaSun size={18} /> : <FaMoon size={18} />}
+            </Button>
           </div>
         </div>
       </motion.header>
@@ -175,20 +227,20 @@ export default function App() {
                     onClick={() => isNextToUnlock && buySlot()}
                     disabled={!isNextToUnlock || state.money < unlockCost}
                     className={cn(
-                      "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 overflow-hidden border border-white/5",
+                      "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 overflow-hidden border",
                       isNextToUnlock
                         ? "bg-cyan-500/5 border-cyan-500/30 hover:border-cyan-500 cursor-pointer"
-                        : "bg-black cursor-not-allowed opacity-10"
+                        : isDarkMode ? "bg-black border-white/5 cursor-not-allowed opacity-10" : "bg-white border-black/5 cursor-not-allowed opacity-10"
                     )}
                   >
                     {isNextToUnlock ? (
                       <div className="flex flex-col items-center gap-1 text-center">
-                        <div className="text-[9px] font-mono text-white opacity-40">
+                        <div className={cn("text-[9px] font-mono", isDarkMode ? "text-white opacity-40" : "text-black opacity-40")}>
                           ${unlockCost.toLocaleString()}
                         </div>
                       </div>
                     ) : (
-                      <FaLock size={12} className="text-neutral-400 opacity-60" />
+                      <FaLock size={12} className={isDarkMode ? "text-neutral-400 opacity-60" : "text-neutral-600 opacity-60"} />
                     )}
                   </motion.button>
                 )
@@ -225,11 +277,11 @@ export default function App() {
                   disabled={!slot && !selectedSeed}
                   className={cn(
                     "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 group overflow-hidden border",
-                    !slot ? "border-white/5 hover:border-cyan-500/50" : "border-white/10 shadow-2xl",
+                    !slot ? (isDarkMode ? "border-white/5 hover:border-cyan-500/50" : "border-black/5 hover:border-cyan-500/50") : (isDarkMode ? "border-white/10 shadow-2xl" : "border-black/10 shadow-lg"),
                     slot?.isHarvestable && "border-cyan-400 shadow-[0_0_25px_#22d3ee55] animate-magic-float"
                   )}
                   style={{
-                    backgroundImage: 'linear-gradient(rgba(0,10,20,0.3), rgba(0,10,20,0.3)), url(/farm-patch.jpg)',
+                    backgroundImage: isDarkMode ? 'linear-gradient(rgba(0,10,20,0.3), rgba(0,10,20,0.3)), url(/farm-patch.jpg)' : 'linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url(/farm-patch.jpg)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                   }}
@@ -286,8 +338,14 @@ export default function App() {
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-3"
         >
-          <Card className={cn(magicStyle, "border border-white/5")}>
-            <CardHeader className="py-1.5 px-4 border-b border-white/5 bg-white/5">
+          <Card className={cn(
+            magicStyle,
+            isDarkMode ? "border-white/5" : "border-black/20"
+          )}>
+            <CardHeader className={cn(
+              "py-1.5 px-4 border-b",
+              isDarkMode ? "border-white/5 bg-white/5" : "border-black/10 bg-black/5"
+            )}>
               <CardTitle className="text-[10px] font-gamer font-bold flex items-center gap-3 opacity-80 tracking-widest uppercase">
                 <FaBriefcase size={10} className="text-cyan-500" /> Inventory
               </CardTitle>
@@ -310,7 +368,7 @@ export default function App() {
                           onClick={() => setSelectedSeed(id)}
                           className={cn(
                             "px-3 py-1 border flex items-center gap-3 transition-all",
-                            selectedSeed === id ? "border-cyan-500 text-cyan-400 bg-cyan-500/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]" : "border-white/5 text-neutral-400"
+                            selectedSeed === id ? "border-cyan-500 text-cyan-400 bg-cyan-500/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]" : (isDarkMode ? "border-white/5 text-neutral-400" : "border-black/5 text-neutral-600")
                           )}
                         >
                           <span className="text-lg arcane-glow">{plant.emoji}</span>
@@ -341,7 +399,10 @@ export default function App() {
                       exit={{ scale: 0, opacity: 0 }}
                       whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)" }}
                       onClick={() => useItem("speed_potion")}
-                      className="px-4 py-1 bg-black border border-purple-500 flex items-center gap-3 hover:bg-purple-500/10 transition-all"
+                      className={cn(
+                        "px-4 py-1 border flex items-center gap-3 transition-all",
+                        isDarkMode ? "bg-black border-purple-500 hover:bg-purple-500/10" : "bg-white border-purple-400 hover:bg-purple-400/10"
+                      )}
                     >
                       <GiPotionBall size={16} className="text-purple-400" />
                       <div className="text-[9px] font-gamer font-bold text-purple-300 uppercase tracking-widest">
@@ -364,8 +425,15 @@ export default function App() {
           transition={{ delay: 0.3 }}
           className="space-y-2"
         >
-          <Card className={cn(magicStyle, "border border-white/5 pb-2")}>
-            <CardHeader className="py-2 px-5 border-b border-white/5 bg-white/5 flex flex-row items-center justify-between">
+          <Card className={cn(
+            magicStyle,
+            isDarkMode ? "border-white/5" : "border-black/20",
+            "pb-2"
+          )}>
+            <CardHeader className={cn(
+              "py-2 px-5 border-b flex flex-row items-center justify-between",
+              isDarkMode ? "border-white/5 bg-white/5" : "border-black/10 bg-black/5"
+            )}>
               <CardTitle className="text-[10px] font-gamer font-bold flex items-center gap-3 opacity-80 tracking-widest">
                 <FaStore size={14} className="text-cyan-500" /> Seed Shop
               </CardTitle>
@@ -373,7 +441,10 @@ export default function App() {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-7 w-7 rounded-none border-white/10 bg-black hover:border-cyan-500/50 text-white"
+                  className={cn(
+                    "h-7 w-7 rounded-none border hover:border-cyan-500/50",
+                    isDarkMode ? "border-white/10 bg-black text-white" : "border-black/10 bg-white text-black"
+                  )}
                   onClick={() => scroll("left")}
                 >
                   <FaChevronLeft size={10} />
@@ -381,7 +452,10 @@ export default function App() {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-7 w-7 rounded-none border-white/10 bg-black hover:border-cyan-500/50 text-white"
+                  className={cn(
+                    "h-7 w-7 rounded-none border hover:border-cyan-500/50",
+                    isDarkMode ? "border-white/10 bg-black text-white" : "border-black/10 bg-white text-black"
+                  )}
                   onClick={() => scroll("right")}
                 >
                   <FaChevronRight size={10} />
@@ -398,21 +472,22 @@ export default function App() {
                         key={plant.id}
                         whileHover={!isLocked ? { y: -4, borderColor: "rgba(34, 211, 238, 0.3)" } : {}}
                         className={cn(
-                          "inline-flex flex-col min-w-[140px] p-3 transition-all rounded-none relative border border-white/5 bg-black/60",
+                          "inline-flex flex-col min-w-[140px] p-3 transition-all rounded-none relative border",
+                          isDarkMode ? "border-white/5 bg-black/60" : "border-black/5 bg-white/60",
                           isLocked && "opacity-40 grayscale blur-[1px]"
                         )}
                       >
                         {isLocked && (
-                          <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white gap-2">
+                          <div className={cn("absolute inset-0 z-10 flex flex-col items-center justify-center gap-2", isDarkMode ? "bg-black/70 text-white" : "bg-white/70 text-black")}>
                             <FaLock size={16} className="text-cyan-900" />
                             <span className="text-[9px] font-gamer text-cyan-900 tracking-widest font-bold">LOCKED_T{plant.levelRequired}</span>
                           </div>
                         )}
-                        <div className="flex items-center justify-center mb-3 h-14 w-full bg-black/40 border-b border-white/5">
+                        <div className={cn("flex items-center justify-center mb-3 h-14 w-full border-b", isDarkMode ? "bg-black/40 border-white/5" : "bg-white/40 border-black/5")}>
                           <span className={cn("text-3xl group-hover:scale-125 transition-transform duration-500 arcane-glow", isLocked && "blur-md")}>{plant.seedEmoji}</span>
                         </div>
                         <div className="mb-3">
-                          <h3 className="font-gamer font-bold text-[10px] truncate tracking-widest text-white opacity-80">{plant.name}</h3>
+                          <h3 className={cn("font-gamer font-bold text-[10px] truncate tracking-widest opacity-80", isDarkMode ? "text-white" : "text-black")}>{plant.name}</h3>
                           <div className="flex items-center justify-between mt-1">
                             <div className="text-[11px] font-mono font-bold text-amber-500 text-glow-cyan">
                               ${plant.cost.toLocaleString()}
@@ -477,7 +552,10 @@ export default function App() {
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0 }}
-                        className="border border-white/5 p-3 bg-black/60 transition-all rounded-none flex flex-col items-center group shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                        className={cn(
+                          "border p-3 transition-all rounded-none flex flex-col items-center group shadow-[0_0_15px_rgba(0,0,0,0.5)]",
+                          isDarkMode ? "border-white/5 bg-black/60" : "border-black/5 bg-white/60"
+                        )}
                       >
                         <div className="text-3xl mb-2 group-hover:scale-110 transition-transform arcane-glow">{plant.emoji}</div>
                         <h3 className="font-gamer font-bold text-[8px] text-neutral-500 mb-1 truncate w-full text-center tracking-widest">{plant.name}</h3>
@@ -488,7 +566,10 @@ export default function App() {
                           size="sm"
                           variant="outline"
                           onClick={() => sellCrop(plant.id)}
-                          className="w-full border-amber-500/30 hover:bg-amber-500/10 text-amber-500 rounded-none h-6 text-[9px] font-gamer bg-black tracking-widest"
+                          className={cn(
+                            "w-full border-amber-500/30 hover:bg-amber-500/10 text-amber-500 rounded-none h-6 text-[9px] font-gamer tracking-widest",
+                            isDarkMode ? "bg-black" : "bg-white"
+                          )}
                         >
                           CONVERT
                         </Button>
@@ -508,7 +589,10 @@ export default function App() {
       </main>
 
       {/* Footer - HUD Console */}
-      <footer className="mt-20 border-t border-white/5 bg-black/80 backdrop-blur-md py-8 px-6">
+      <footer className={cn(
+        "mt-20 border-t py-8 px-6 transition-colors duration-500",
+        isDarkMode ? "border-white/5 bg-black/80" : "border-black/5 bg-white/80"
+      )}>
         <div className="mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col items-center md:items-start gap-1">
             <h2 className="text-sm font-gamer font-bold text-glow-cyan text-cyan-400 tracking-widest">AFK FARM // WRAITH22444</h2>
@@ -554,7 +638,10 @@ export default function App() {
               className={cn("relative w-full max-w-sm p-6 neon-border-amber", magicStyle)}
             >
               <h3 className="text-xl font-gamer font-bold text-amber-500 mb-2 tracking-widest text-glow-cyan">Confirm_Transmutation</h3>
-              <p className="text-xs text-neutral-400 font-mono mb-6 uppercase tracking-wider leading-relaxed">
+              <p className={cn(
+                "text-xs font-mono mb-6 uppercase tracking-wider leading-relaxed",
+                isDarkMode ? "text-neutral-400" : "text-neutral-600"
+              )}>
                 Are you sure you wish to convert all harvested items into wealth? This process is irreversible.
               </p>
               <div className="flex gap-4">
@@ -569,7 +656,10 @@ export default function App() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 border-white/10 hover:bg-white/5 rounded-none font-gamer font-bold h-10 tracking-[0.2em] text-neutral-400"
+                  className={cn(
+                    "flex-1 border-white/10 hover:bg-white/5 rounded-none font-gamer font-bold h-10 tracking-[0.2em]",
+                    isDarkMode ? "text-neutral-400 border-white/10" : "text-neutral-600 border-black/10"
+                  )}
                   onClick={() => setShowSellConfirm(false)}
                 >
                   ABORT
@@ -600,7 +690,10 @@ export default function App() {
                 <FaTerminal size={24} className="animate-pulse" />
                 <h3 className="text-xl font-gamer font-bold tracking-widest uppercase">Critical_Failure</h3>
               </div>
-              <p className="text-xs text-neutral-400 font-mono mb-8 uppercase tracking-wider leading-relaxed">
+              <p className={cn(
+                "text-xs font-mono mb-8 uppercase tracking-wider leading-relaxed",
+                isDarkMode ? "text-neutral-400" : "text-neutral-600"
+              )}>
                 Warning: Initiating a global memory wipe will permanently erase all credits, levels, and items. This action cannot be undone.
               </p>
               <div className="flex flex-col gap-3">

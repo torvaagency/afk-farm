@@ -26,14 +26,27 @@
     --foreground: 0 0% 100%;
     --card: 0 0% 2%;
     --border: 0 0% 10%;
+    --magic-bg: rgba(0, 0, 0, 0.8);
+    --panel-border: rgba(255, 255, 255, 0.1);
+  }
+
+  :root.light {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --border: 0 0% 90%;
+    --magic-bg: rgba(255, 255, 255, 0.9);
+    --panel-border: rgba(0, 0, 0, 0.1);
   }
 
   * {
-    @apply border-white/5;
+    border-color: var(--panel-border);
   }
 
   body {
-    @apply bg-black text-white;
+    @apply transition-colors duration-500;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: "Orbitron", sans-serif;
     -webkit-font-smoothing: antialiased;
     background-image: 
@@ -42,11 +55,21 @@
       linear-gradient(90deg, rgba(34, 211, 238, 0.03), rgba(168, 85, 247, 0.02), rgba(34, 211, 238, 0.03));
     background-size: 100% 100%, 100% 2px, 3px 100%;
   }
+
+  :root.light body {
+     background-image: 
+      radial-gradient(circle at 50% 20%, #f0f9ff 0%, #fff 100%),
+      linear-gradient(rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.02) 50%),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.01), rgba(168, 85, 247, 0.01), rgba(34, 211, 238, 0.01));
+    background-size: 100% 100%, 100% 2px, 3px 100%;
+  }
 }
 
 @layer components {
   .magic-panel {
-    @apply bg-black/80 border border-white/10 shadow-[0_0_30px_rgba(34,211,238,0.1)] relative overflow-hidden;
+    background-color: var(--magic-bg);
+    border: 1px solid var(--panel-border);
+    @apply shadow-[0_0_30px_rgba(34,211,238,0.1)] relative overflow-hidden;
     background-image: radial-gradient(circle at top right, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
   }
 
@@ -57,16 +80,23 @@
     background-size: 100% 2px, 3px 100%;
   }
 
+  .light .magic-panel::after {
+    background: linear-gradient(rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.05) 50%), linear-gradient(90deg, rgba(34, 211, 238, 0.01), rgba(168, 85, 247, 0.01), rgba(34, 211, 238, 0.01));
+  }
+
   .neon-border-emerald {
-    @apply border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)] inset-shadow-[0_0_10px_rgba(16,185,129,0.05)];
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    @apply shadow-[0_0_15px_rgba(16,185,129,0.15)] inset-shadow-[0_0_10px_rgba(16,185,129,0.05)];
   }
 
   .neon-border-purple {
-    @apply border border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.2)] inset-shadow-[0_0_15px_rgba(168,85,247,0.1)];
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    @apply shadow-[0_0_20px_rgba(168,85,247,0.2)] inset-shadow-[0_0_15px_rgba(168,85,247,0.1)];
   }
 
   .neon-border-amber {
-    @apply border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)];
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    @apply shadow-[0_0_15px_rgba(245,158,11,0.15)];
   }
 
   .arcane-glow {
@@ -109,6 +139,10 @@
   animation: scanline 12s linear infinite;
 }
 
+.light .scanline {
+  opacity: 0.01;
+}
+
 @keyframes scanline {
   0% { transform: translateY(0vh); }
   100% { transform: translateY(120vh); }
@@ -119,13 +153,20 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-black;
+  background-color: var(--magic-bg);
 }
 
 ::-webkit-scrollbar-thumb {
   @apply bg-cyan-900/50 border border-cyan-500/20;
 }
 
+:root.light ::-webkit-scrollbar-thumb {
+  @apply bg-neutral-300 border-neutral-400/50;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-cyan-500/50;
+}
+:root.light ::-webkit-scrollbar-thumb:hover {
+  @apply bg-neutral-400;
 }

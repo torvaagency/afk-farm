@@ -809,16 +809,32 @@ export default function App() {
             className="mt-8"
           >
             <Card className={cn(magicStyle, "border-cyan-500/20 overflow-hidden")}>
-              <CardHeader className="py-2 px-5 border-b border-white/5 bg-white/5 flex flex-row items-center justify-between">
+              <CardHeader 
+                className="py-2 px-5 border-b border-white/5 bg-white/5 flex flex-row items-center justify-between cursor-pointer hover:bg-white/10 transition-colors"
+                onClick={() => setIsChatOpen(!isChatOpen)}
+              >
                 <CardTitle className="text-[10px] font-gamer font-bold text-cyan-500/60 flex items-center gap-3 tracking-widest uppercase">
                   <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
                   Global_Comm_Channel
                 </CardTitle>
-                <div className="text-[9px] text-neutral-600 font-mono">
-                  ACTIVE_LINK // {username}
+                <div className="flex items-center gap-4">
+                  <div className="text-[9px] text-neutral-600 font-mono hidden md:block">
+                    ACTIVE_LINK // {username}
+                  </div>
+                  <div className="text-[10px] text-cyan-500/40 font-gamer uppercase tracking-widest">
+                    {isChatOpen ? "[ COLLAPSE ]" : "[ EXPAND ]"}
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+              <AnimatePresence initial={false}>
+                {isChatOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <CardContent className="p-0">
                 <ScrollArea className="h-48 w-full bg-black/20" ref={chatScrollRef}>
                   <div className="p-4 space-y-3">
                     {messages.length === 0 ? (
@@ -883,9 +899,12 @@ export default function App() {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
-          </motion.section>
-        </main>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+    </motion.section>
+  </main>
 
         {/* Footer - HUD Console */}
         <footer className={cn(

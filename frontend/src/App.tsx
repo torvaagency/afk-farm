@@ -401,13 +401,12 @@ export default function App() {
                           layout
                           initial={{ opacity: 0, scale: 0.5 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          whileHover={{ backgroundColor: "rgba(34, 211, 238, 0.1)" }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => buySlot()}
                           disabled={state.money < unlockCost}
                           className={cn(
                             "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 overflow-hidden border",
-                            "bg-cyan-500/5 border-cyan-500/30 hover:border-cyan-500 cursor-pointer"
+                            "bg-cyan-500/5 border-cyan-500/30 cursor-pointer"
                           )}
                         >
                           <div className="flex flex-col items-center gap-1 text-center">
@@ -444,7 +443,6 @@ export default function App() {
                   <Tooltip key={i}>
                     <TooltipTrigger asChild>
                       <motion.button
-                        whileHover={{ scale: 1.05, zIndex: 1 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => {
                           if (slot?.isHarvestable) {
@@ -463,7 +461,7 @@ export default function App() {
                         disabled={!slot && !selectedSeed}
                         className={cn(
                           "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 group overflow-hidden border",
-                          !slot ? (isDarkMode ? "border-white/5 hover:border-cyan-500/50" : "border-black/5 hover:border-cyan-500/50") : (isDarkMode ? "border-white/10 shadow-2xl" : "border-black/10 shadow-lg"),
+                          !slot ? (isDarkMode ? "border-white/5" : "border-black/5") : (isDarkMode ? "border-white/10 shadow-2xl" : "border-black/10 shadow-lg"),
                           slot?.isHarvestable && "border-cyan-400 shadow-[0_0_25px_#22d3ee55] animate-magic-float"
                         )}
                         style={{
@@ -573,7 +571,7 @@ export default function App() {
                                 </TooltipTrigger>
                               </ContextMenuTrigger>
                               <ContextMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[120px]">
-                                <ContextMenuItem 
+                                <ContextMenuItem
                                   onClick={() => sellSeed(id)}
                                   className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer"
                                 >

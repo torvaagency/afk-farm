@@ -231,25 +231,61 @@ export function useGameStore() {
     let harvestedCount = 0;
 
     if (itemId === "harvest_potion") {
-      state.slots.forEach((slot, index) => {
-        if (slot?.isHarvestable) {
-          if (harvestCrop(index)) {
-            harvestedCount++;
-            success = true;
-          }
-        }
-      });
+      const harvestableIndices = state.slots
+        .map((slot, i) => (slot?.isHarvestable ? i : -1))
+        .filter((i) => i !== -1);
 
-      if (harvestedCount > 0) {
-        addToast(`Harvest Potion used! Gathered ${harvestedCount} crops.`, "item");
-        // Consume the potion
-        setState(prev => ({
-          ...prev,
-          items: {
-            ...prev.items,
-            [itemId]: (prev.items[itemId] || 0) - 1
+      if (harvestableIndices.length > 0) {
+        let totalExpGain = 0;
+        const harvestedCrops: Record<string, number> = {};
+        let finalLevel = state.level;
+
+        setState((prev) => {
+          const newSlots = [...prev.slots];
+          const newCrops = { ...prev.crops };
+          const newItems = { ...prev.items };
+
+          harvestableIndices.forEach((idx) => {
+            const slot = prev.slots[idx]!;
+            const plant = PLANTS[slot.plantId];
+            const exp = Math.floor(Math.sqrt(plant.cost) * 2) + (plant.levelRequired * 5);
+            
+            totalExpGain += exp;
+            newCrops[slot.plantId] = (newCrops[slot.plantId] || 0) + 1;
+            newSlots[idx] = null;
+
+            // Optional: Still allow potion drops from mass harvest
+            if (Math.random() < 0.05) newItems["speed_potion"] = (newItems["speed_potion"] || 0) + 1;
+            if (Math.random() < 0.03) newItems["harvest_potion"] = (newItems["harvest_potion"] || 0) + 1;
+            if (Math.random() < 0.02) newItems["finish_potion"] = (newItems["finish_potion"] || 0) + 1;
+          });
+
+          // Handle Level Ups
+          let newExp = prev.exp + totalExpGain;
+          let newLevel = prev.level;
+          while (newExp >= getExpToNextLevel(newLevel)) {
+            newExp -= getExpToNextLevel(newLevel);
+            newLevel++;
           }
-        }));
+          finalLevel = newLevel;
+
+          // Consume Potion
+          newItems[itemId] = (newItems[itemId] || 0) - 1;
+
+          return {
+            ...prev,
+            slots: newSlots,
+            crops: newCrops,
+            items: newItems,
+            level: newLevel,
+            exp: newExp,
+          };
+        });
+
+        addToast(`Gale Harvested ${harvestableIndices.length} crops! +${totalExpGain} XP`, "success");
+        if (finalLevel > state.level) {
+          addToast(`LEVEL UP! You are now level ${finalLevel}!`, "success");
+        }
         return true;
       } else {
         addToast("No crops ready for harvest!", "info");

@@ -102,8 +102,9 @@ const MagicGrowth = () => (
 )
 
 export default function App() {
-  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellSeed, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
+  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellSeed, instantFinish, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
+  const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -248,7 +249,7 @@ export default function App() {
           <div className="mx-auto flex max-w-6xl items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex flex-col">
-                <h1 
+                <h1
                   className="text-lg md:text-2xl font-gamer font-black tracking-tighter leading-none text-glow-cyan cursor-pointer"
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 >
@@ -321,7 +322,7 @@ export default function App() {
                     isDarkMode ? "bg-black border-cyan-500/20" : "bg-white border-cyan-500/40"
                   )}>
                     <FaCoins size={16} className={cn("arcane-glow", isDarkMode ? "text-amber-400" : "text-amber-600")} />
-                    <span className={cn("font-gamer font-bold text-base tracking-tight text-glow-cyan", isDarkMode ? "text-white" : "text-black")}>${state.money.toLocaleString()}</span>
+                    <span className={cn("font-gamer font-bold text-base tracking-tight text-glow-cyan", isDarkMode ? "text-white" : "text-black")}>{state.money.toLocaleString()}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="bg-black border-amber-500/50 text-amber-500 font-gamer text-[10px]">
@@ -452,18 +453,29 @@ export default function App() {
                         onClick={() => {
                           if (slot?.isHarvestable) {
                             harvestCrop(i)
+                          } else if (slot && !slot.isHarvestable) {
+                            if (selectedItem === "finish_potion") {
+                              const success = instantFinish(i)
+                              if (success) {
+                                setSelectedItem(null)
+                              }
+                            } else {
+                              addToast("Crop is still growing!", "info")
+                            }
                           } else if (!slot) {
                             if (selectedSeed) {
                               const success = plantSeed(i, selectedSeed)
                               if (success && (state.inventory[selectedSeed] || 0) <= 1) {
                                 setSelectedSeed(null)
                               }
+                            } else if (selectedItem === "finish_potion") {
+                              addToast("Cannot use Chrono-Essence on empty soil!", "info")
                             } else {
                               addToast("Select a seed from inventory first!", "info")
                             }
                           }
                         }}
-                        disabled={!slot && !selectedSeed}
+                        disabled={!slot && !selectedSeed && selectedItem !== "finish_potion"}
                         className={cn(
                           "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 group overflow-hidden border",
                           !slot ? (isDarkMode ? "border-white/5" : "border-black/5") : (isDarkMode ? "border-white/10 shadow-2xl" : "border-black/10 shadow-lg"),
@@ -564,7 +576,10 @@ export default function App() {
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0 }}
                                     whileHover={{ backgroundColor: "rgba(34, 211, 238, 0.05)", borderColor: "rgba(34, 211, 238, 0.5)" }}
-                                    onClick={() => setSelectedSeed(id)}
+                                    onClick={() => {
+                                      setSelectedSeed(id)
+                                      setSelectedItem(null)
+                                    }}
                                     className={cn(
                                       "px-3 py-1 border flex items-center gap-3 transition-all",
                                       selectedSeed === id ? "border-cyan-500 text-cyan-400 bg-cyan-500/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]" : (isDarkMode ? "border-white/5 text-neutral-400" : "border-black/5 text-neutral-600")
@@ -605,7 +620,7 @@ export default function App() {
               <CardContent className="p-2 px-4">
                 <div className="flex flex-wrap gap-3 min-h-[40px] items-center">
                   <AnimatePresence>
-                    {(state.items?.speed_potion || 0) > 0 || (state.items?.harvest_potion || 0) > 0 ? (
+                    {(state.items?.speed_potion || 0) > 0 || (state.items?.harvest_potion || 0) > 0 || (state.items?.finish_potion || 0) > 0 ? (
                       <div className="flex flex-wrap gap-3">
                         {(state.items?.speed_potion || 0) > 0 && (
                           <Tooltip key="speed_potion">
@@ -655,6 +670,41 @@ export default function App() {
                             </TooltipTrigger>
                             <TooltipContent className="bg-black border-amber-500/50 text-amber-500 font-gamer text-[10px]">
                               Instantly Harvest All Ready Crops
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+
+                        {(state.items?.finish_potion || 0) > 0 && (
+                          <Tooltip key="finish_potion">
+                            <TooltipTrigger asChild>
+                              <motion.button
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(34, 211, 238, 0.3)" }}
+                                onClick={() => {
+                                  if (selectedItem === "finish_potion") {
+                                    setSelectedItem(null)
+                                  } else {
+                                    setSelectedItem("finish_potion")
+                                    setSelectedSeed(null)
+                                  }
+                                }}
+                                className={cn(
+                                  "px-4 py-1 border flex items-center gap-3 transition-all",
+                                  selectedItem === "finish_potion" 
+                                    ? "bg-cyan-500/20 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.3)]" 
+                                    : (isDarkMode ? "bg-black border-cyan-500/50 hover:bg-cyan-500/10" : "bg-white border-cyan-400/50 hover:bg-cyan-400/10")
+                                )}
+                              >
+                                <GiCrystalGrowth size={16} className="text-cyan-400" />
+                                <div className="text-[9px] font-gamer font-bold text-cyan-300 uppercase tracking-widest">
+                                  Chrono_Essence [x{state.items.finish_potion}]
+                                </div>
+                              </motion.button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
+                              {selectedItem === "finish_potion" ? "Target a growing crop to finish" : "Select to instantly finish one crop"}
                             </TooltipContent>
                           </Tooltip>
                         )}

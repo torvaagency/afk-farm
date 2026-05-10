@@ -182,6 +182,7 @@ export function useGameStore() {
 
         let foundSpeedPotion = Math.random() < 0.05;
         let foundHarvestPotion = Math.random() < 0.03;
+        let foundFinishPotion = Math.random() < 0.02; // Rare drop
         let newItems = { ...prev.items };
 
         if (foundSpeedPotion) {
@@ -189,6 +190,9 @@ export function useGameStore() {
         }
         if (foundHarvestPotion) {
           newItems["harvest_potion"] = (newItems["harvest_potion"] || 0) + 1;
+        }
+        if (foundFinishPotion) {
+          newItems["finish_potion"] = (newItems["finish_potion"] || 0) + 1;
         }
 
         return {
@@ -209,10 +213,12 @@ export function useGameStore() {
       if (finalLevel > state.level) {
         addToast(`LEVEL UP! You are now level ${finalLevel}!`, "success");
       }
-      if (Math.random() < 0.05) {
+      if (foundSpeedPotion) {
         addToast("Found a Speed Potion!", "item");
-      } else if (Math.random() < 0.03) {
+      } else if (foundHarvestPotion) {
         addToast("Found a Harvest Potion!", "item");
+      } else if (foundFinishPotion) {
+        addToast("Found an Instant Finish Potion!", "item");
       }
 
       return true;
@@ -273,6 +279,32 @@ export function useGameStore() {
 
     if (success && itemId === "speed_potion") {
       addToast("Speed Boost Activated! (60s)", "success");
+    }
+    return success;
+  };
+
+  const instantFinish = (slotIndex: number) => {
+    let success = false;
+    setState((prev) => {
+      const slot = prev.slots[slotIndex];
+      if (slot && !slot.isHarvestable && (prev.items["finish_potion"] || 0) > 0) {
+        success = true;
+        const newSlots = [...prev.slots];
+        newSlots[slotIndex] = { ...slot, isHarvestable: true };
+        return {
+          ...prev,
+          slots: newSlots,
+          items: {
+            ...prev.items,
+            finish_potion: prev.items["finish_potion"] - 1,
+          },
+        };
+      }
+      return prev;
+    });
+
+    if (success) {
+      addToast("Chrono-Essence used! Crop is ready.", "success");
     }
     return success;
   };
@@ -382,6 +414,7 @@ export function useGameStore() {
     harvestCrop,
     sellCrop,
     sellSeed,
+    instantFinish,
     sellAllCrops,
     buySlot,
     nextSlotCost: Math.floor(Math.pow(state.unlockedSlots, 2.5) * 100),

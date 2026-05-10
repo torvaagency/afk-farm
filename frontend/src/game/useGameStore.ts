@@ -39,7 +39,7 @@ const INITIAL_STATE: GameState = {
   },
   level: 1,
   exp: 0,
-  slots: Array(24).fill(null),
+  slots: Array(32).fill(null),
   unlockedSlots: 1,
 };
 
@@ -324,7 +324,7 @@ export function useGameStore() {
     let success = false;
 
     setState((prev) => {
-      if (prev.money >= cost && prev.unlockedSlots < 24) {
+      if (prev.money >= cost && prev.unlockedSlots < 32) {
         success = true;
         return {
           ...prev,

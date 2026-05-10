@@ -248,7 +248,12 @@ export default function App() {
           <div className="mx-auto flex max-w-6xl items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex flex-col">
-                <h1 className="text-lg md:text-2xl font-gamer font-black tracking-tighter leading-none text-glow-cyan">AFK FARM</h1>
+                <h1 
+                  className="text-lg md:text-2xl font-gamer font-black tracking-tighter leading-none text-glow-cyan cursor-pointer"
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                >
+                  AFK FARM
+                </h1>
                 <div className="flex items-center gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>

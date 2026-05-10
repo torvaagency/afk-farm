@@ -605,30 +605,60 @@ export default function App() {
               <CardContent className="p-2 px-4">
                 <div className="flex flex-wrap gap-3 min-h-[40px] items-center">
                   <AnimatePresence>
-                    {(state.items?.speed_potion || 0) > 0 ? (
-                      <Tooltip key="speed_potion">
-                        <TooltipTrigger asChild>
-                          <motion.button
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0, opacity: 0 }}
-                            whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)" }}
-                            onClick={() => useItem("speed_potion")}
-                            className={cn(
-                              "px-4 py-1 border flex items-center gap-3 transition-all",
-                              isDarkMode ? "bg-black border-purple-500 hover:bg-purple-500/10" : "bg-white border-purple-400 hover:bg-purple-400/10"
-                            )}
-                          >
-                            <GiPotionBall size={16} className="icon-themed" />
-                            <div className="text-[9px] font-gamer font-bold text-purple-300 uppercase tracking-widest">
-                              Haste_Essence [x{state.items.speed_potion}]
-                            </div>
-                          </motion.button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-black border-purple-500/50 text-purple-400 font-gamer text-[10px]">
-                          Consume for 2x Growth Speed
-                        </TooltipContent>
-                      </Tooltip>
+                    {(state.items?.speed_potion || 0) > 0 || (state.items?.harvest_potion || 0) > 0 ? (
+                      <div className="flex flex-wrap gap-3">
+                        {(state.items?.speed_potion || 0) > 0 && (
+                          <Tooltip key="speed_potion">
+                            <TooltipTrigger asChild>
+                              <motion.button
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)" }}
+                                onClick={() => useItem("speed_potion")}
+                                className={cn(
+                                  "px-4 py-1 border flex items-center gap-3 transition-all",
+                                  isDarkMode ? "bg-black border-purple-500 hover:bg-purple-500/10" : "bg-white border-purple-400 hover:bg-purple-400/10"
+                                )}
+                              >
+                                <GiPotionBall size={16} className="text-purple-400" />
+                                <div className="text-[9px] font-gamer font-bold text-purple-300 uppercase tracking-widest">
+                                  Haste_Essence [x{state.items.speed_potion}]
+                                </div>
+                              </motion.button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-black border-purple-500/50 text-purple-400 font-gamer text-[10px]">
+                              Consume for 2x Growth Speed
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+
+                        {(state.items?.harvest_potion || 0) > 0 && (
+                          <Tooltip key="harvest_potion">
+                            <TooltipTrigger asChild>
+                              <motion.button
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(245, 158, 11, 0.3)" }}
+                                onClick={() => useItem("harvest_potion")}
+                                className={cn(
+                                  "px-4 py-1 border flex items-center gap-3 transition-all",
+                                  isDarkMode ? "bg-black border-amber-500 hover:bg-amber-500/10" : "bg-white border-amber-400 hover:bg-amber-400/10"
+                                )}
+                              >
+                                <GiCrystalGrowth size={16} className="text-amber-400" />
+                                <div className="text-[9px] font-gamer font-bold text-amber-300 uppercase tracking-widest">
+                                  Gatherer_Gale [x{state.items.harvest_potion}]
+                                </div>
+                              </motion.button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-black border-amber-500/50 text-amber-500 font-gamer text-[10px]">
+                              Instantly Harvest All Ready Crops
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     ) : (
                       <div className="text-[8px] font-gamer text-purple-500/20 italic uppercase tracking-widest">No Elixirs Found</div>
                     )}

@@ -180,10 +180,14 @@ export function useGameStore() {
         }
         finalLevel = newLevel;
 
-        let newItems = { ...prev.items };
-        if (foundPotion) {
-          const itemType = "speed_potion";
-          newItems[itemType] = (newItems[itemType] || 0) + 1;
+        let foundSpeedPotion = Math.random() < 0.05;
+        let foundHarvestPotion = Math.random() < 0.03;
+
+        if (foundSpeedPotion) {
+          newItems["speed_potion"] = (newItems["speed_potion"] || 0) + 1;
+        }
+        if (foundHarvestPotion) {
+          newItems["harvest_potion"] = (newItems["harvest_potion"] || 0) + 1;
         }
 
         return {
@@ -204,8 +208,10 @@ export function useGameStore() {
       if (finalLevel > state.level) {
         addToast(`LEVEL UP! You are now level ${finalLevel}!`, "success");
       }
-      if (foundPotion) {
+      if (Math.random() < 0.05) {
         addToast("Found a Speed Potion!", "item");
+      } else if (Math.random() < 0.03) {
+        addToast("Found a Harvest Potion!", "item");
       }
 
       return true;
@@ -215,6 +221,35 @@ export function useGameStore() {
 
   const useItem = (itemId: string) => {
     let success = false;
+    let harvestedCount = 0;
+
+    if (itemId === "harvest_potion") {
+      state.slots.forEach((slot, index) => {
+        if (slot?.isHarvestable) {
+          if (harvestCrop(index)) {
+            harvestedCount++;
+            success = true;
+          }
+        }
+      });
+
+      if (harvestedCount > 0) {
+        addToast(`Harvest Potion used! Gathered ${harvestedCount} crops.`, "item");
+        // Consume the potion
+        setState(prev => ({
+          ...prev,
+          items: {
+            ...prev.items,
+            [itemId]: (prev.items[itemId] || 0) - 1
+          }
+        }));
+        return true;
+      } else {
+        addToast("No crops ready for harvest!", "info");
+        return false;
+      }
+    }
+
     setState((prev) => {
       if ((prev.items[itemId] || 0) > 0) {
         success = true;

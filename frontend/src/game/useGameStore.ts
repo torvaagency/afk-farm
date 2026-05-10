@@ -182,6 +182,7 @@ export function useGameStore() {
 
         let foundSpeedPotion = Math.random() < 0.05;
         let foundHarvestPotion = Math.random() < 0.03;
+        let newItems = { ...prev.items };
 
         if (foundSpeedPotion) {
           newItems["speed_potion"] = (newItems["speed_potion"] || 0) + 1;

@@ -103,20 +103,6 @@ export function useGameStore() {
     return () => clearInterval(timer);
   }, []);
 
-  // Auto-harvest logic (Diablo-style AFK feature)
-  useEffect(() => {
-    if (state.level < 5) return;
-
-    const interval = setInterval(() => {
-      state.slots.forEach((slot, index) => {
-        if (slot?.isHarvestable) {
-          harvestCrop(index);
-        }
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [state.level, state.slots]);
 
   const buySeed = (plantId: string) => {
     const plant = PLANTS[plantId];

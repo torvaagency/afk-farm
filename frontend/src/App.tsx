@@ -102,7 +102,7 @@ const MagicGrowth = () => (
 )
 
 export default function App() {
-  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
+  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellSeed, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)

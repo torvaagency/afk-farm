@@ -83,7 +83,7 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🌲",
     seedEmoji: "🌲",
     cost: 4000,
-    sellPrice: 20000,
+    sellPrice: 15000,
     growTime: 1200, // 20m (was 30m)
     stages: ["🌱", "🌲", "🌲"],
     levelRequired: 14,
@@ -94,7 +94,7 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🌳",
     seedEmoji: "🌳",
     cost: 10000,
-    sellPrice: 55000,
+    sellPrice: 40000,
     growTime: 2400, // 40m (was 1h)
     stages: ["🌱", "🌳", "🌳"],
     levelRequired: 18,
@@ -105,7 +105,7 @@ export const PLANTS: Record<string, PlantType> = {
     emoji: "🍓",
     seedEmoji: "🍓",
     cost: 25000,
-    sellPrice: 150000,
+    sellPrice: 100000,
     growTime: 3600, // 1h (was 2h)
     stages: ["🌱", "🌿", "🍓"],
     levelRequired: 22,

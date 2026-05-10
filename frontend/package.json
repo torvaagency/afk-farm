@@ -16,6 +16,7 @@
     "@microsoft/signalr": "^8.0.17",
     "@radix-ui/react-progress": "^1.1.8",
     "@tailwindcss/vite": "^4.2.1",
+    "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",

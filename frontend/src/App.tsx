@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { useGameStore } from "./game/useGameStore"
 import { PLANTS } from "./game/constants"
 import { cn } from "@/lib/utils"
@@ -102,11 +103,12 @@ const MagicGrowth = () => (
 )
 
 export default function App() {
-  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellSeed, instantFinish, sellAllCrops, buySlot, nextSlotCost, useItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
+  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellSeed, instantFinish, sellAllCrops, buySlot, sellSlot, nextSlotCost, lastSlotSellPrice, useItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [slotToSell, setSlotToSell] = useState<number | null>(null)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("theme")
@@ -447,90 +449,112 @@ export default function App() {
 
                 return (
                   <Tooltip key={i}>
-                    <TooltipTrigger asChild>
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          if (slot?.isHarvestable) {
-                            harvestCrop(i)
-                          } else if (slot && !slot.isHarvestable) {
-                            if (selectedItem === "finish_potion") {
-                              const success = instantFinish(i)
-                              if (success) {
-                                setSelectedItem(null)
-                              }
-                            } else {
-                              addToast("Crop is still growing!", "info")
-                            }
-                          } else if (!slot) {
-                            if (selectedSeed) {
-                              const success = plantSeed(i, selectedSeed)
-                              if (success && (state.inventory[selectedSeed] || 0) <= 1) {
-                                setSelectedSeed(null)
-                              }
-                            } else if (selectedItem === "finish_potion") {
-                              addToast("Cannot use Chrono-Essence on empty soil!", "info")
-                            } else {
-                              addToast("Select a seed from inventory first!", "info")
-                            }
-                          }
-                        }}
-                        disabled={!slot && !selectedSeed && selectedItem !== "finish_potion"}
-                        className={cn(
-                          "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 group overflow-hidden border",
-                          !slot ? (isDarkMode ? "border-white/5" : "border-black/5") : (isDarkMode ? "border-white/10 shadow-2xl" : "border-black/10 shadow-lg"),
-                          slot?.isHarvestable && "border-cyan-400 shadow-[0_0_25px_#22d3ee55] animate-magic-float"
-                        )}
-                        style={{
-                          backgroundImage: isDarkMode ? 'linear-gradient(rgba(0,10,20,0.3), rgba(0,10,20,0.3)), url(/farm-patch.jpg)' : 'linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url(/farm-patch.jpg)',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }}
-                      >
-                        <motion.span
-                          animate={slot?.isHarvestable ? { scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] } : {}}
-                          transition={slot?.isHarvestable ? { repeat: Infinity, duration: 2 } : {}}
-                          className={cn(
-                            "text-2xl transition-transform duration-700 arcane-glow",
-                            !slot && "opacity-5 group-hover:opacity-40 grayscale"
-                          )}
-                        >
-                          {currentEmoji}
-                        </motion.span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <TooltipTrigger asChild>
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className={cn(
+                              "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 group overflow-hidden border",
+                              !slot ? (isDarkMode ? "border-white/5" : "border-black/5") : (isDarkMode ? "border-white/10 shadow-2xl" : "border-black/10 shadow-lg"),
+                              slot?.isHarvestable && "border-cyan-400 shadow-[0_0_25px_#22d3ee55] animate-magic-float"
+                            )}
+                            style={{
+                              backgroundImage: isDarkMode ? 'linear-gradient(rgba(0,10,20,0.3), rgba(0,10,20,0.3)), url(/farm-patch.jpg)' : 'linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url(/farm-patch.jpg)',
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center'
+                            }}
+                          >
+                            <motion.span
+                              animate={slot?.isHarvestable ? { scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] } : {}}
+                              transition={slot?.isHarvestable ? { repeat: Infinity, duration: 2 } : {}}
+                              className={cn(
+                                "text-2xl transition-transform duration-700 arcane-glow",
+                                !slot && "opacity-5 group-hover:opacity-40 grayscale"
+                              )}
+                            >
+                              {currentEmoji}
+                            </motion.span>
 
-                        {slot && !slot.isHarvestable && (
-                          <>
-                            <MagicGrowth />
-                            <div className="absolute top-1 right-1 text-[7px] px-1.5 font-mono bg-black/90 text-cyan-500 border border-cyan-500/30">
-                              {remainingSeconds}s
-                            </div>
-                            <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
-                              <motion.div
-                                className={cn(
-                                  "h-full bg-cyan-500 shadow-[0_0_10px_#22d3ee]",
-                                  isSpeedBoosted && "bg-purple-400 shadow-[0_0_10px_#a855f7]"
-                                )}
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progress}%` }}
-                              />
-                            </div>
-                          </>
-                        )}
+                            {slot && !slot.isHarvestable && (
+                              <>
+                                <MagicGrowth />
+                                <div className="absolute top-1 right-1 text-[7px] px-1.5 font-mono bg-black/90 text-cyan-500 border border-cyan-500/30">
+                                  {remainingSeconds}s
+                                </div>
+                                <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
+                                  <motion.div
+                                    className={cn(
+                                      "h-full bg-cyan-500 shadow-[0_0_10px_#22d3ee]",
+                                      isSpeedBoosted && "bg-purple-400 shadow-[0_0_10px_#a855f7]"
+                                    )}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                              </>
+                            )}
 
+                            {slot?.isHarvestable && (
+                              <div className="absolute inset-0 bg-cyan-500/5 flex items-center justify-center overflow-hidden">
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+                                  className="w-full h-full border border-cyan-500/10 rounded-full scale-[1.5]"
+                                />
+                                <div className="text-cyan-300 font-gamer text-[8px] tracking-[0.2em] animate-pulse text-glow-cyan">BLOOMED</div>
+                              </div>
+                            )}
+                          </motion.button>
+                        </TooltipTrigger>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[150px]">
                         {slot?.isHarvestable && (
-                          <div className="absolute inset-0 bg-cyan-500/5 flex items-center justify-center overflow-hidden">
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-                              className="w-full h-full border border-cyan-500/10 rounded-full scale-[1.5]"
-                            />
-                            <div className="text-cyan-300 font-gamer text-[8px] tracking-[0.2em] animate-pulse text-glow-cyan">BLOOMED</div>
-                          </div>
+                          <DropdownMenuItem onClick={() => harvestCrop(i)} className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer text-emerald-400">
+                            Harvest {plant?.name}
+                          </DropdownMenuItem>
                         )}
-                      </motion.button>
-                    </TooltipTrigger>
+                        {slot && !slot.isHarvestable && selectedItem === "finish_potion" && (
+                          <DropdownMenuItem onClick={() => { instantFinish(i); setSelectedItem(null); }} className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer text-purple-400">
+                            Use Chrono-Essence
+                          </DropdownMenuItem>
+                        )}
+                        {!slot && selectedSeed && (
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              const success = plantSeed(i, selectedSeed);
+                              if (success && (state.inventory[selectedSeed] || 0) <= 1) {
+                                setSelectedSeed(null);
+                              }
+                            }} 
+                            className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer text-cyan-400"
+                          >
+                            Plant {PLANTS[selectedSeed].name}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => setSlotToSell(i)}
+                          disabled={state.unlockedSlots <= 1 || slot !== null}
+                          className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer text-red-400"
+                        >
+                          Sell Patch for ${lastSlotSellPrice.toLocaleString()}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-white/5" />
+                        <div className="px-2 py-1.5 text-neutral-500 opacity-60">
+                          {slot ? `Status: ${slot.isHarvestable ? "Ready" : "Growing"}` : "Status: Empty"}
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                      {slot?.isHarvestable ? `Harvest ${plant?.name}` : slot ? `Growing ${plant?.name} (${remainingSeconds}s)` : selectedSeed ? `Plant ${PLANTS[selectedSeed].name}` : "Empty Node"}
+                      {slot?.isHarvestable 
+                        ? `Harvest ${plant?.name}` 
+                        : slot 
+                          ? `Growing ${plant?.name} (${remainingSeconds}s)` 
+                          : selectedSeed 
+                            ? `Plant ${PLANTS[selectedSeed].name}` 
+                            : (state.unlockedSlots > 1)
+                              ? `Empty Node (Click to open menu)`
+                              : "Empty Node"}
                     </TooltipContent>
                   </Tooltip>
                 )
@@ -567,8 +591,8 @@ export default function App() {
                         const plant = PLANTS[id]
                         return (
                           <Tooltip key={id}>
-                            <ContextMenu>
-                              <ContextMenuTrigger asChild>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
                                 <TooltipTrigger asChild>
                                   <motion.button
                                     layout
@@ -576,10 +600,6 @@ export default function App() {
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0 }}
                                     whileHover={{ backgroundColor: "rgba(34, 211, 238, 0.05)", borderColor: "rgba(34, 211, 238, 0.5)" }}
-                                    onClick={() => {
-                                      setSelectedSeed(id)
-                                      setSelectedItem(null)
-                                    }}
                                     className={cn(
                                       "px-3 py-1 border flex items-center gap-3 transition-all",
                                       selectedSeed === id ? "border-cyan-500 text-cyan-400 bg-cyan-500/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]" : (isDarkMode ? "border-white/5 text-neutral-400" : "border-black/5 text-neutral-600")
@@ -589,18 +609,27 @@ export default function App() {
                                     <span className="text-[10px] font-mono font-bold">x{count}</span>
                                   </motion.button>
                                 </TooltipTrigger>
-                              </ContextMenuTrigger>
-                              <ContextMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[120px]">
-                                <ContextMenuItem
-                                  onClick={() => sellSeed(id)}
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[120px]">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedSeed(id)
+                                    setSelectedItem(null)
+                                  }}
                                   className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer"
                                 >
+                                  Select {plant.name}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => sellSeed(id)}
+                                  className="hover:bg-red-500/20 focus:bg-red-500/20 cursor-pointer text-red-400"
+                                >
                                   Sell 1x for ${Math.floor(plant.cost * 0.5)}
-                                </ContextMenuItem>
-                              </ContextMenuContent>
-                            </ContextMenu>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                              Select {plant.name} Seeds (Right-click to sell)
+                              {plant.name} Seeds (Click for options)
                             </TooltipContent>
                           </Tooltip>
                         )
@@ -1088,6 +1117,58 @@ export default function App() {
                     onClick={() => setShowSellConfirm(false)}
                   >
                     ABORT
+                  </Button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {slotToSell !== null && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSlotToSell(null)}
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                className={cn("relative w-full max-w-sm p-8 border border-cyan-500/30 shadow-[0_0_50px_rgba(34,211,238,0.1)]", magicStyle)}
+              >
+                <div className="flex items-center gap-4 mb-4 text-cyan-400">
+                  <FaTerminal size={20} className="text-glow-cyan" />
+                  <h3 className="text-lg font-gamer font-bold tracking-widest uppercase">Node_Deconstruction</h3>
+                </div>
+                <p className={cn(
+                  "text-xs font-mono mb-8 uppercase tracking-widest leading-relaxed",
+                  isDarkMode ? "text-neutral-400" : "text-neutral-600"
+                )}>
+                  Are you sure you want to deconstruct this field node? You will receive a 50% refund of ${lastSlotSellPrice.toLocaleString()}.
+                </p>
+                <div className="flex gap-4">
+                  <Button
+                    className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-black rounded-none font-gamer font-bold h-10 tracking-[0.2em]"
+                    onClick={() => {
+                      sellSlot(slotToSell)
+                      setSlotToSell(null)
+                    }}
+                  >
+                    CONFIRM
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 border-white/10 hover:bg-white/5 rounded-none font-gamer font-bold h-10 tracking-[0.2em]",
+                      isDarkMode ? "text-neutral-400 border-white/10" : "text-neutral-600 border-black/10"
+                    )}
+                    onClick={() => setSlotToSell(null)}
+                  >
+                    CANCEL
                   </Button>
                 </div>
               </motion.div>

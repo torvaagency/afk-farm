@@ -411,6 +411,39 @@ export function useGameStore() {
     return success;
   };
 
+  const sellSlot = (slotIndex: number) => {
+    if (state.unlockedSlots <= 1) {
+      addToast("Cannot sell the starting patch!", "info");
+      return false;
+    }
+
+    if (state.slots[slotIndex] !== null) {
+      addToast("Cannot sell a patch with a growing crop!", "info");
+      return false;
+    }
+
+    const purchasePrice = Math.floor(Math.pow(state.unlockedSlots - 1, 2.5) * 100);
+    const sellPrice = Math.floor(purchasePrice * 0.5);
+
+    setState((prev) => {
+      const newSlots = [...prev.slots];
+      // Remove the slot at slotIndex and shift others left
+      newSlots.splice(slotIndex, 1);
+      // Maintain array size of 32
+      newSlots.push(null);
+
+      return {
+        ...prev,
+        money: prev.money + sellPrice,
+        unlockedSlots: prev.unlockedSlots - 1,
+        slots: newSlots,
+      };
+    });
+
+    addToast(`Sold patch for $${sellPrice.toLocaleString()}`, "success");
+    return true;
+  };
+
   const sellSeed = (plantId: string) => {
     const plant = PLANTS[plantId];
     let success = false;
@@ -453,7 +486,9 @@ export function useGameStore() {
     instantFinish,
     sellAllCrops,
     buySlot,
+    sellSlot,
     nextSlotCost: Math.floor(Math.pow(state.unlockedSlots, 2.5) * 100),
+    lastSlotSellPrice: state.unlockedSlots > 1 ? Math.floor(Math.floor(Math.pow(state.unlockedSlots - 1, 2.5) * 100) * 0.5) : 0,
     useItem,
     isSpeedBoosted: Date.now() < state.activeEffects.speedBoostUntil,
     expToNextLevel: getExpToNextLevel(state.level),

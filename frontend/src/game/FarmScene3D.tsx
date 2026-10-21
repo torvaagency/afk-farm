@@ -674,60 +674,101 @@ function WeatherLighting({ weatherType = "sunny", isDarkMode }: { weatherType?: 
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Farm Bot Drone Companion in 3D                                            */
+/*  Farm Fairy Companion in 3D                                                */
 /* -------------------------------------------------------------------------- */
 
-function DroneBot({ level }: { level: number }) {
+function FairyCompanion({ level }: { level: number }) {
   const groupRef = useRef<THREE.Group>(null)
-  const propRef = useRef<THREE.Mesh>(null)
+  const leftWingRef = useRef<THREE.Mesh>(null)
+  const rightWingRef = useRef<THREE.Mesh>(null)
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime()
     if (groupRef.current) {
       const radius = 2.2
-      groupRef.current.position.x = Math.sin(t * 0.7) * radius
-      groupRef.current.position.z = Math.cos(t * 0.7) * radius
-      groupRef.current.position.y = 1.6 + Math.sin(t * 2.2) * 0.15
-      groupRef.current.rotation.y = -t * 0.7 + Math.PI / 2
-      groupRef.current.rotation.z = Math.sin(t * 1.5) * 0.08
+      // Graceful floating figure-8 / oval flutter
+      groupRef.current.position.x = Math.sin(t * 0.75) * radius
+      groupRef.current.position.z = Math.cos(t * 0.75) * radius
+      groupRef.current.position.y = 1.5 + Math.sin(t * 3.0) * 0.18
+      groupRef.current.rotation.y = -t * 0.75 + Math.PI / 2
+      groupRef.current.rotation.z = Math.sin(t * 2.0) * 0.12
     }
-    if (propRef.current) {
-      propRef.current.rotation.y += 0.45
+    // Rapid fairy wing fluttering
+    const flutter = Math.sin(t * 28) * 0.55
+    if (leftWingRef.current) {
+      leftWingRef.current.rotation.y = 0.3 + flutter
+    }
+    if (rightWingRef.current) {
+      rightWingRef.current.rotation.y = -0.3 - flutter
     }
   })
 
-  const bodyColor = level >= 3 ? "#8b5cf6" : level === 2 ? "#06b6d4" : "#10b981"
-  const glowColor = level >= 3 ? "#c084fc" : level === 2 ? "#67e8f9" : "#6ee7b7"
+  // Tier 1: Emerald/Mint | Tier 2: Cyan/Sky | Tier 3: Celestial Violet/Gold
+  const coreColor = level >= 3 ? "#f59e0b" : level === 2 ? "#38bdf8" : "#34d399"
+  const glowColor = level >= 3 ? "#fbbf24" : level === 2 ? "#7dd3fc" : "#6ee7b7"
+  const wingColor = level >= 3 ? "#fef08a" : level === 2 ? "#bae6fd" : "#a7f3d0"
 
   return (
     <group ref={groupRef}>
-      {/* Bot Body */}
+      {/* Fairy Magic Dust Trail */}
+      <Sparkles count={18} scale={[0.8, 0.8, 0.8]} position={[0, 0, 0]} size={2.5} speed={1.2} color={glowColor} />
+
+      {/* Fairy Core Body */}
       <mesh castShadow position={[0, 0, 0]}>
-        <sphereGeometry args={[0.2, 16, 16]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.3} metalness={0.7} />
+        <sphereGeometry args={[0.13, 16, 16]} />
+        <meshStandardMaterial
+          color={coreColor}
+          emissive={glowColor}
+          emissiveIntensity={1.4}
+          roughness={0.2}
+          metalness={0.1}
+        />
       </mesh>
-      {/* Visor Eye */}
-      <mesh position={[0, 0, 0.16]}>
-        <boxGeometry args={[0.16, 0.07, 0.07]} />
-        <meshStandardMaterial color={glowColor} emissive={glowColor} emissiveIntensity={1.5} />
+
+      {/* Fairy Head */}
+      <mesh position={[0, 0.12, 0.02]}>
+        <sphereGeometry args={[0.08, 16, 16]} />
+        <meshStandardMaterial
+          color="#ffffff"
+          emissive={glowColor}
+          emissiveIntensity={1.0}
+          roughness={0.2}
+        />
       </mesh>
-      {/* Propeller / Antenna */}
-      <mesh ref={propRef} position={[0, 0.26, 0]}>
-        <boxGeometry args={[0.38, 0.02, 0.06]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.8} />
+
+      {/* Left Fairy Wing */}
+      <mesh ref={leftWingRef} position={[-0.08, 0.06, -0.04]} rotation={[0.2, 0, -0.35]}>
+        <coneGeometry args={[0.16, 0.38, 3]} />
+        <meshStandardMaterial
+          color={wingColor}
+          emissive={wingColor}
+          emissiveIntensity={0.8}
+          transparent
+          opacity={0.7}
+          roughness={0.1}
+          side={THREE.DoubleSide}
+        />
       </mesh>
-      <mesh position={[0, 0.22, 0]}>
-        <cylinderGeometry args={[0.02, 0.02, 0.08]} />
-        <meshStandardMaterial color="#64748b" />
+
+      {/* Right Fairy Wing */}
+      <mesh ref={rightWingRef} position={[0.08, 0.06, -0.04]} rotation={[0.2, 0, 0.35]}>
+        <coneGeometry args={[0.16, 0.38, 3]} />
+        <meshStandardMaterial
+          color={wingColor}
+          emissive={wingColor}
+          emissiveIntensity={0.8}
+          transparent
+          opacity={0.7}
+          roughness={0.1}
+          side={THREE.DoubleSide}
+        />
       </mesh>
-      {/* Downward scanning light */}
-      <spotLight
-        position={[0, -0.1, 0]}
-        target-position={[0, -1.8, 0]}
-        intensity={1.5}
-        distance={4}
-        angle={0.4}
-        penumbra={0.6}
+
+      {/* Downward magical blessing light */}
+      <pointLight
+        position={[0, -0.05, 0]}
+        intensity={1.8}
+        distance={4.5}
         color={glowColor}
       />
     </group>
@@ -792,8 +833,8 @@ export default function FarmScene3D({
       {/* Weather Rain Drops */}
       {isRaining && <RainSystem isThunderstorm={weatherType === "thunderstorm"} />}
 
-      {/* Farm Bot Drone Companion */}
-      {autoHarvesterLevel > 0 && autoHarvesterEnabled && <DroneBot level={autoHarvesterLevel} />}
+      {/* Farm Fairy Companion */}
+      {autoHarvesterLevel > 0 && autoHarvesterEnabled && <FairyCompanion level={autoHarvesterLevel} />}
 
       <Suspense fallback={null}>
         {slots.slice(0, visible).map((slot, i) => {

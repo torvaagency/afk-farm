@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { FaTimes, FaRobot, FaCheckCircle, FaLock, FaPlay, FaPause, FaCoins, FaStar } from "react-icons/fa"
-import { BOT_TIERS } from "./features"
+import { FaTimes, FaCheckCircle, FaLock, FaPlay, FaPause, FaCoins, FaStar } from "react-icons/fa"
+import { FAIRY_TIERS } from "./features"
 
 interface BotDialogProps {
   open: boolean
@@ -24,8 +24,8 @@ export default function BotDialog({
   onToggleBot,
   onUpgradeBot,
 }: BotDialogProps) {
-  const currentTier = botLevel > 0 ? BOT_TIERS[botLevel - 1] : null
-  const nextTier = botLevel < BOT_TIERS.length ? BOT_TIERS[botLevel] : null
+  const currentTier = botLevel > 0 ? FAIRY_TIERS[botLevel - 1] : null
+  const nextTier = botLevel < FAIRY_TIERS.length ? FAIRY_TIERS[botLevel] : null
 
   const canAfford = nextTier ? money >= nextTier.cost : false
   const meetsLevel = nextTier ? farmLevel >= nextTier.levelRequired : false
@@ -51,8 +51,8 @@ export default function BotDialog({
             {/* Header */}
             <div className="panel-head flex items-center justify-between border-b border-[color:var(--line)] px-4 py-3">
               <div className="flex items-center gap-2">
-                <FaRobot className="text-emerald-400" size={16} />
-                <h2 className="text-sm font-semibold tracking-wide">Farm Bot Automation</h2>
+                <span className="text-base leading-none">🧚</span>
+                <h2 className="text-sm font-semibold tracking-wide">Farm Fairy Sanctuary</h2>
               </div>
               <Button size="icon" variant="ghost" className="h-7 w-7 rounded-md" onClick={onClose} aria-label="Close">
                 <FaTimes size={12} />
@@ -60,16 +60,16 @@ export default function BotDialog({
             </div>
 
             <div className="flex flex-col gap-4 p-4 overflow-y-auto">
-              {/* Bot Status Banner */}
+              {/* Fairy Status Banner */}
               <div className="chip flex items-center justify-between p-3.5 border-emerald-500/30 bg-emerald-500/[0.04]">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-2xl">
-                    🤖
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-2xl">
+                    🧚
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm">
-                        {currentTier ? currentTier.name : "Automation Offline"}
+                        {currentTier ? currentTier.name : "Fairy Slumbering"}
                       </span>
                       {botLevel > 0 && (
                         <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400">
@@ -79,10 +79,10 @@ export default function BotDialog({
                     </div>
                     <p className="muted text-xs mt-0.5">
                       {botLevel === 0
-                        ? "Deploy an automated helper to harvest and replant crops while you are away."
+                        ? "Befriend a magical fairy companion to flutter over your fields, harvesting and nurturing crops while you are away."
                         : botEnabled
-                        ? "Active: Harvesting and tending plots in real time."
-                        : "Paused: Automated actions temporarily suspended."}
+                        ? "Active: Fluttering over crops and nurturing your farm with magic."
+                        : "Resting: Your fairy is peacefully resting in the grove."}
                     </p>
                   </div>
                 </div>
@@ -100,11 +100,11 @@ export default function BotDialog({
                   >
                     {botEnabled ? (
                       <>
-                        <FaPause size={9} /> Pause
+                        <FaPause size={9} /> Rest
                       </>
                     ) : (
                       <>
-                        <FaPlay size={9} /> Resume
+                        <FaPlay size={9} /> Awaken
                       </>
                     )}
                   </Button>
@@ -113,8 +113,8 @@ export default function BotDialog({
 
               {/* Tiers List */}
               <div className="flex flex-col gap-2.5">
-                <span className="text-xs font-semibold tracking-wider uppercase muted">Upgrade Progression</span>
-                {BOT_TIERS.map((tier) => {
+                <span className="text-xs font-semibold tracking-wider uppercase muted">Fairy Attunement Progression</span>
+                {FAIRY_TIERS.map((tier) => {
                   const isUnlocked = botLevel >= tier.level
                   const isCurrent = botLevel === tier.level
                   const isNext = botLevel + 1 === tier.level
@@ -143,7 +143,7 @@ export default function BotDialog({
                             )}
                             {isUnlocked && !isCurrent && (
                               <span className="flex items-center gap-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] text-zinc-400">
-                                <FaCheckCircle size={8} /> Acquired
+                                <FaCheckCircle size={8} /> Attuned
                               </span>
                             )}
                             {!isUnlocked && (
@@ -169,7 +169,7 @@ export default function BotDialog({
                             key={i}
                             className="rounded bg-[var(--surface-3)] px-2 py-0.5 text-[10px] text-zinc-300"
                           >
-                            ✓ {feat}
+                            ✨ {feat}
                           </span>
                         ))}
                       </div>
@@ -183,7 +183,7 @@ export default function BotDialog({
                 <div className="chip flex items-center justify-between p-3.5 border-sky-500/40 bg-sky-500/[0.05]">
                   <div>
                     <span className="text-xs font-semibold text-sky-400">
-                      {botLevel === 0 ? "Deploy Initial Bot" : "Next Tier Upgrade"}
+                      {botLevel === 0 ? "Awaken Companion Fairy" : "Next Attunement"}
                     </span>
                     <div className="flex items-center gap-3 mt-1 text-xs">
                       <span className={`font-semibold tabular-nums ${canAfford ? "text-amber-400" : "text-red-400"}`}>
@@ -210,13 +210,13 @@ export default function BotDialog({
                       : !canAfford
                       ? "Can't Afford"
                       : botLevel === 0
-                      ? "Deploy Bot"
-                      : "Upgrade"}
+                      ? "Awaken Fairy"
+                      : "Attune Fairy"}
                   </Button>
                 </div>
               ) : (
                 <div className="chip py-3 text-center text-xs font-semibold text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-                  🎉 Maximum Automation Tier Achieved!
+                  ✨ Supreme Fairy Attunement Achieved!
                 </div>
               )}
             </div>

@@ -37,7 +37,6 @@ import {
   FaTimes,
   FaSun,
   FaMoon,
-  FaRobot,
   FaScroll,
 } from "react-icons/fa"
 import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
@@ -408,7 +407,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2.5">
-            {/* Farm Bot Button */}
+            {/* Farm Fairy Button */}
             <Button
               variant="ghost"
               size="sm"
@@ -418,9 +417,9 @@ export default function App() {
                 state.autoHarvester.level > 0 && state.autoHarvester.enabled && "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
               )}
             >
-              <FaRobot size={13} className={state.autoHarvester.level > 0 ? "text-emerald-400" : "opacity-60"} />
+              <span className="text-sm leading-none">🧚</span>
               <span className="hidden md:inline">
-                {state.autoHarvester.level === 0 ? "Bot" : `Bot Lv ${state.autoHarvester.level}`}
+                {state.autoHarvester.level === 0 ? "Fairy" : `Fairy Lv ${state.autoHarvester.level}`}
               </span>
               {state.autoHarvester.level > 0 && (
                 <span className={cn("h-1.5 w-1.5 rounded-full", state.autoHarvester.enabled ? "bg-emerald-400 animate-pulse" : "bg-zinc-500")} />

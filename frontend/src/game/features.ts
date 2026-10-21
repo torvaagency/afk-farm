@@ -81,10 +81,10 @@ export const WEATHERS: Record<WeatherType, WeatherInfo> = {
 export const WEATHER_DURATION = 120_000; // 2 minutes per weather cycle
 
 /* -------------------------------------------------------------------------- */
-/*  Farm Bot / Auto-Harvester                                                 */
+/*  Farm Fairy / Magical Auto-Harvester                                       */
 /* -------------------------------------------------------------------------- */
 
-export interface BotTier {
+export interface FairyTier {
   level: number;
   name: string;
   cost: number;
@@ -93,43 +93,47 @@ export interface BotTier {
   features: string[];
 }
 
-export const BOT_TIERS: BotTier[] = [
+export type BotTier = FairyTier;
+
+export const FAIRY_TIERS: FairyTier[] = [
   {
     level: 1,
-    name: "Scarecrow Harvester",
+    name: "Sprout Sprite",
     cost: 500,
     levelRequired: 3,
-    description: "Automated scout that harvests crops as soon as they ripen.",
+    description: "A nimble woodland fairy who flutters across your farm, harvesting ripe crops with a touch of magic.",
     features: [
-      "Automatically harvests ripe crops every second",
-      "Gathers XP and potion drop bonuses while AFK",
+      "Magically harvests ripe crops every second",
+      "Gathers XP and potion blessings while AFK",
     ],
   },
   {
     level: 2,
-    name: "Planter Drone",
+    name: "Flora Pixie",
     cost: 5000,
     levelRequired: 8,
-    description: "Equipped with seed dispersion nozzles to automatically replant plots.",
+    description: "Attuned with botanical magic to enchant and replant seeds automatically into empty soil.",
     features: [
-      "All Level 1 harvesting capabilities",
+      "All Sprout Sprite harvesting powers",
       "Auto-replants harvested plots if seeds are in inventory",
       "Prioritizes the same seed type previously planted",
     ],
   },
   {
     level: 3,
-    name: "Quantum Agribot",
+    name: "Celestial Sylph",
     cost: 50000,
     levelRequired: 16,
-    description: "High-tech farm AI with precision optics and yield optimizer.",
+    description: "A radiant celestial fairy who blesses the farm with celestial abundance and golden prosperity.",
     features: [
-      "All Level 2 auto-harvest and auto-replant capabilities",
+      "All Flora Pixie harvest and replant powers",
       "+15% bonus gold on all crop sales",
-      "Overclocked AI for maximum AFK production",
+      "Maximum AFK harvesting enchantment",
     ],
   },
 ];
+
+export const BOT_TIERS = FAIRY_TIERS;
 
 /* -------------------------------------------------------------------------- */
 /*  Quests & Achievements                                                     */
@@ -289,17 +293,17 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: "ach_bot_unlocked",
-    title: "Automation Age",
-    description: "Deploy your first Farm Bot assistant.",
-    icon: "🤖",
+    title: "Fairy Companion",
+    description: "Befriend your first Farm Fairy companion.",
+    icon: "🧚",
     target: 1,
     reward: { money: 1500, exp: 400 },
   },
   {
     id: "ach_bot_max",
-    title: "Singularity Farm",
-    description: "Upgrade your Farm Bot to Level 3 Quantum Agribot.",
-    icon: "🛸",
+    title: "Celestial Blessing",
+    description: "Awaken the Tier 3 Celestial Sylph fairy.",
+    icon: "✨",
     target: 3,
     reward: { money: 50000, exp: 5000, item: "finish_potion" },
   },

@@ -766,7 +766,7 @@ export function useGameStore() {
     return success;
   };
 
-  /* ----------------------- Farm Bot Controls ----------------------- */
+  /* ----------------------- Farm Fairy Controls ----------------------- */
   const toggleBot = () => {
     setState((prev) => ({
       ...prev,
@@ -775,7 +775,7 @@ export function useGameStore() {
         enabled: !prev.autoHarvester.enabled,
       },
     }));
-    addToast(state.autoHarvester.enabled ? "Farm Bot paused." : "Farm Bot activated!", "info");
+    addToast(state.autoHarvester.enabled ? "Farm Fairy resting." : "Farm Fairy fluttered into action!", "info");
   };
 
   const upgradeBot = () => {
@@ -801,7 +801,7 @@ export function useGameStore() {
       },
     }));
 
-    addToast(`Upgraded Farm Bot to ${nextTier.name}!`, "success");
+    addToast(`Attuned Farm Fairy to ${nextTier.name}!`, "success");
   };
 
   /* ------------------- Quests & Achievements Claims ------------------- */

@@ -4,6 +4,7 @@ import { Edges, Html, OrbitControls, Sparkles, useCursor, useTexture } from "@re
 import * as THREE from "three"
 import { PLANTS } from "./constants"
 import type { FarmSlot } from "./useGameStore"
+import { type WeatherType, WEATHERS } from "./features"
 
 /* -------------------------------------------------------------------------- */
 /*  Crop looks – every plant maps onto a small set of low-poly "kinds"         */
@@ -574,6 +575,165 @@ function CameraRig({ cols, rows }: { cols: number; rows: number }) {
   )
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Weather Particles & Lighting                                              */
+/* -------------------------------------------------------------------------- */
+
+function RainSystem({ isThunderstorm }: { isThunderstorm: boolean }) {
+  const count = isThunderstorm ? 450 : 250
+  const pointsRef = useRef<THREE.Points>(null)
+  const [positions] = useState(() => {
+    const pos = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      pos[i * 3 + 0] = (Math.random() - 0.5) * 16
+      pos[i * 3 + 1] = Math.random() * 8
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 16
+    }
+    return pos
+  })
+
+  useFrame((_, delta) => {
+    if (!pointsRef.current) return
+    const attr = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute
+    const arr = attr.array as Float32Array
+    const speed = isThunderstorm ? 12 : 8
+    for (let i = 0; i < count; i++) {
+      arr[i * 3 + 1] -= speed * delta
+      if (arr[i * 3 + 1] < 0) {
+        arr[i * 3 + 1] = 7.5 + Math.random() * 1.5
+      }
+    }
+    attr.needsUpdate = true
+  })
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial
+        color={isThunderstorm ? "#c0d4ff" : "#8ac0ff"}
+        size={0.07}
+        transparent
+        opacity={isThunderstorm ? 0.75 : 0.6}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  )
+}
+
+function WeatherLighting({ weatherType = "sunny", isDarkMode }: { weatherType?: WeatherType; isDarkMode: boolean }) {
+  const [flash, setFlash] = useState(0)
+
+  useEffect(() => {
+    if (weatherType !== "thunderstorm") {
+      setFlash(0)
+      return
+    }
+    const triggerFlash = () => {
+      setFlash(2.5)
+      setTimeout(() => setFlash(0), 120)
+      setTimeout(() => {
+        if (Math.random() < 0.5) {
+          setFlash(1.8)
+          setTimeout(() => setFlash(0), 80)
+        }
+      }, 180)
+    }
+    const interval = setInterval(() => {
+      if (Math.random() < 0.4) triggerFlash()
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [weatherType])
+
+  const info = WEATHERS[weatherType] || WEATHERS.sunny
+  const sky = isDarkMode ? info.skyColor : "#cfe8f5"
+  const lightColor = flash > 0 ? "#ffffff" : info.lightColor
+  const intensity = (isDarkMode ? info.lightIntensity : 1.8) + flash
+
+  return (
+    <>
+      <color attach="background" args={[sky]} />
+      <fog attach="fog" args={[sky, 18, 40]} />
+      <ambientLight intensity={(isDarkMode ? 1.0 : 0.9) + flash * 0.5} color={flash > 0 ? "#ffffff" : info.ambientColor} />
+      <directionalLight
+        position={[6, 10, 5]}
+        intensity={intensity}
+        color={lightColor}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-9}
+        shadow-camera-right={9}
+        shadow-camera-top={9}
+        shadow-camera-bottom={-9}
+        shadow-camera-near={1}
+        shadow-camera-far={30}
+      />
+    </>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Farm Bot Drone Companion in 3D                                            */
+/* -------------------------------------------------------------------------- */
+
+function DroneBot({ level }: { level: number }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const propRef = useRef<THREE.Mesh>(null)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (groupRef.current) {
+      const radius = 2.2
+      groupRef.current.position.x = Math.sin(t * 0.7) * radius
+      groupRef.current.position.z = Math.cos(t * 0.7) * radius
+      groupRef.current.position.y = 1.6 + Math.sin(t * 2.2) * 0.15
+      groupRef.current.rotation.y = -t * 0.7 + Math.PI / 2
+      groupRef.current.rotation.z = Math.sin(t * 1.5) * 0.08
+    }
+    if (propRef.current) {
+      propRef.current.rotation.y += 0.45
+    }
+  })
+
+  const bodyColor = level >= 3 ? "#8b5cf6" : level === 2 ? "#06b6d4" : "#10b981"
+  const glowColor = level >= 3 ? "#c084fc" : level === 2 ? "#67e8f9" : "#6ee7b7"
+
+  return (
+    <group ref={groupRef}>
+      {/* Bot Body */}
+      <mesh castShadow position={[0, 0, 0]}>
+        <sphereGeometry args={[0.2, 16, 16]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.3} metalness={0.7} />
+      </mesh>
+      {/* Visor Eye */}
+      <mesh position={[0, 0, 0.16]}>
+        <boxGeometry args={[0.16, 0.07, 0.07]} />
+        <meshStandardMaterial color={glowColor} emissive={glowColor} emissiveIntensity={1.5} />
+      </mesh>
+      {/* Propeller / Antenna */}
+      <mesh ref={propRef} position={[0, 0.26, 0]}>
+        <boxGeometry args={[0.38, 0.02, 0.06]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.8} />
+      </mesh>
+      <mesh position={[0, 0.22, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 0.08]} />
+        <meshStandardMaterial color="#64748b" />
+      </mesh>
+      {/* Downward scanning light */}
+      <spotLight
+        position={[0, -0.1, 0]}
+        target-position={[0, -1.8, 0]}
+        intensity={1.5}
+        distance={4}
+        angle={0.4}
+        penumbra={0.6}
+        color={glowColor}
+      />
+    </group>
+  )
+}
+
 export interface FarmScene3DProps {
   slots: (FarmSlot | null)[]
   unlockedSlots: number
@@ -584,6 +744,9 @@ export interface FarmScene3DProps {
   selectedPlot: number | null
   onSelectPlot: (index: number) => void
   onBuySlot: () => void
+  weatherType?: WeatherType
+  autoHarvesterLevel?: number
+  autoHarvesterEnabled?: boolean
 }
 
 export default function FarmScene3D({
@@ -596,8 +759,11 @@ export default function FarmScene3D({
   selectedPlot,
   onSelectPlot,
   onBuySlot,
+  weatherType = "sunny",
+  autoHarvesterLevel = 0,
+  autoHarvesterEnabled = false,
 }: FarmScene3DProps) {
-  const visible = Math.min(unlockedSlots + 1, slots.length) // unlocked plots + the next purchasable one
+  const visible = Math.min(unlockedSlots + 1, slots.length)
   const cols = Math.min(COLS, visible)
   const rows = Math.ceil(visible / COLS)
 
@@ -607,27 +773,11 @@ export default function FarmScene3D({
     return [(col - (cols - 1) / 2) * PITCH, 0, (row - (rows - 1) / 2) * PITCH]
   }
 
-  const sky = isDarkMode ? "#050a12" : "#cfe8f5"
+  const isRaining = weatherType === "rain" || weatherType === "thunderstorm"
 
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ fov: 40, near: 0.1, far: 100 }} gl={{ antialias: true }}>
-      <color attach="background" args={[sky]} />
-      <fog attach="fog" args={[sky, 18, 40]} />
-
-      <ambientLight intensity={isDarkMode ? 1.0 : 0.9} color={isDarkMode ? "#a9c1ff" : "#ffffff"} />
-      <directionalLight
-        position={[6, 10, 5]}
-        intensity={isDarkMode ? 1.9 : 1.8}
-        color={isDarkMode ? "#cfe0ff" : "#fff2d6"}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-9}
-        shadow-camera-right={9}
-        shadow-camera-top={9}
-        shadow-camera-bottom={-9}
-        shadow-camera-near={1}
-        shadow-camera-far={30}
-      />
+      <WeatherLighting weatherType={weatherType} isDarkMode={isDarkMode} />
 
       <CameraRig cols={cols} rows={rows} />
 
@@ -638,6 +788,12 @@ export default function FarmScene3D({
       </mesh>
 
       {isDarkMode && <Sparkles count={50} scale={[14, 4, 10]} position={[0, 2, 0]} size={2} speed={0.25} color="#22d3ee" />}
+
+      {/* Weather Rain Drops */}
+      {isRaining && <RainSystem isThunderstorm={weatherType === "thunderstorm"} />}
+
+      {/* Farm Bot Drone Companion */}
+      {autoHarvesterLevel > 0 && autoHarvesterEnabled && <DroneBot level={autoHarvesterLevel} />}
 
       <Suspense fallback={null}>
         {slots.slice(0, visible).map((slot, i) => {

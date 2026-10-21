@@ -18,6 +18,9 @@ import { cn } from "@/lib/utils"
 const FarmScene3D = lazy(() => import("./game/FarmScene3D"))
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { WEATHERS } from "./game/features"
+import QuestsDialog from "./game/QuestsDialog"
+import BotDialog from "./game/BotDialog"
 
 // React Icons
 import {
@@ -34,6 +37,8 @@ import {
   FaTimes,
   FaSun,
   FaMoon,
+  FaRobot,
+  FaScroll,
 } from "react-icons/fa"
 import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
 
@@ -105,12 +110,47 @@ function ConfirmDialog({ open, title, description, confirmLabel, tone, onConfirm
 }
 
 export default function App() {
-  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellSeed, instantFinish, sellAllCrops, buySlot, sellSlot, nextSlotCost, lastSlotSellPrice, useItem: consumeItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
+  const {
+    state,
+    toasts,
+    buySeed,
+    plantSeed,
+    harvestCrop,
+    sellCrop,
+    sellSeed,
+    instantFinish,
+    sellAllCrops,
+    buySlot,
+    sellSlot,
+    nextSlotCost,
+    lastSlotSellPrice,
+    useItem: consumeItem,
+    isSpeedBoosted,
+    expToNextLevel,
+    resetGame,
+    addToast,
+    toggleBot,
+    upgradeBot,
+    claimQuest,
+    claimAchievement,
+  } = useGameStore()
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [slotToSell, setSlotToSell] = useState<number | null>(null)
+  const [isQuestsOpen, setIsQuestsOpen] = useState(false)
+  const [isBotModalOpen, setIsBotModalOpen] = useState(false)
+
+  const [weatherRemaining, setWeatherRemaining] = useState(0)
+  useEffect(() => {
+    const update = () => {
+      setWeatherRemaining(Math.max(0, Math.floor((state.weather.nextChangeAt - Date.now()) / 1000)))
+    }
+    update()
+    const timer = setInterval(update, 1000)
+    return () => clearInterval(timer)
+  }, [state.weather.nextChangeAt])
   
   const { theme, setTheme } = useTheme()
   const isDarkMode = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches)
@@ -323,12 +363,35 @@ export default function App() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
               <FaSeedling size={16} />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <h1
                 className="ink cursor-default text-base font-semibold tracking-tight"
               >
                 AFK Farm
               </h1>
+              {(() => {
+                const weatherInfo = WEATHERS[state.weather.type] || WEATHERS.sunny
+                return (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className={cn("chip flex h-8 cursor-help items-center gap-1.5 px-2.5 text-xs font-semibold select-none", weatherInfo.colorClass)}>
+                        <span>{weatherInfo.emoji}</span>
+                        <span className="hidden sm:inline">{weatherInfo.name}</span>
+                        <span className="pill text-[9px] font-bold font-mono tracking-tight px-1 py-0.2">
+                          {weatherInfo.badge}
+                        </span>
+                        <span className="text-[10px] font-mono tabular-nums opacity-75">
+                          {Math.floor(weatherRemaining / 60)}:{String(weatherRemaining % 60).padStart(2, "0")}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className={tipClass}>
+                      <div className="font-semibold text-xs mb-0.5">{weatherInfo.emoji} {weatherInfo.name} ({weatherInfo.badge})</div>
+                      <div className="text-[11px] opacity-80">{weatherInfo.description}</div>
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })()}
               {isSpeedBoosted && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -344,7 +407,46 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
+            {/* Farm Bot Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsBotModalOpen(true)}
+              className={cn(
+                "chip relative h-9 gap-1.5 rounded-lg px-2.5 text-xs",
+                state.autoHarvester.level > 0 && state.autoHarvester.enabled && "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
+              )}
+            >
+              <FaRobot size={13} className={state.autoHarvester.level > 0 ? "text-emerald-400" : "opacity-60"} />
+              <span className="hidden md:inline">
+                {state.autoHarvester.level === 0 ? "Bot" : `Bot Lv ${state.autoHarvester.level}`}
+              </span>
+              {state.autoHarvester.level > 0 && (
+                <span className={cn("h-1.5 w-1.5 rounded-full", state.autoHarvester.enabled ? "bg-emerald-400 animate-pulse" : "bg-zinc-500")} />
+              )}
+            </Button>
+
+            {/* Quests Button */}
+            {(() => {
+              const claimableCount = state.quests.filter((q) => q.completed && !q.claimed).length
+              return (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsQuestsOpen(true)}
+                  className="chip relative h-9 gap-1.5 rounded-lg px-2.5 text-xs"
+                >
+                  <FaScroll size={12} className="text-amber-400" />
+                  <span className="hidden md:inline">Quests</span>
+                  {claimableCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-black animate-pulse">
+                      {claimableCount}
+                    </span>
+                  )}
+                </Button>
+              )
+            })()}
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="hidden w-40 cursor-help flex-col gap-1 sm:flex">
@@ -524,6 +626,9 @@ export default function App() {
                     selectedPlot={selectedPlot}
                     onSelectPlot={handlePlotSelect}
                     onBuySlot={buySlot}
+                    weatherType={state.weather.type}
+                    autoHarvesterLevel={state.autoHarvester.level}
+                    autoHarvesterEnabled={state.autoHarvester.enabled}
                   />
                 </Suspense>
               </div>
@@ -821,6 +926,29 @@ export default function App() {
             setShowResetConfirm(false)
           }}
           onCancel={() => setShowResetConfirm(false)}
+        />
+
+        <QuestsDialog
+          open={isQuestsOpen}
+          onClose={() => setIsQuestsOpen(false)}
+          quests={state.quests}
+          achievementsClaimed={state.achievementsClaimed}
+          stats={state.stats}
+          unlockedSlots={state.unlockedSlots}
+          autoHarvesterLevel={state.autoHarvester.level}
+          onClaimQuest={claimQuest}
+          onClaimAchievement={claimAchievement}
+        />
+
+        <BotDialog
+          open={isBotModalOpen}
+          onClose={() => setIsBotModalOpen(false)}
+          botLevel={state.autoHarvester.level}
+          botEnabled={state.autoHarvester.enabled}
+          money={state.money}
+          farmLevel={state.level}
+          onToggleBot={toggleBot}
+          onUpgradeBot={upgradeBot}
         />
       </div>
     </TooltipProvider>

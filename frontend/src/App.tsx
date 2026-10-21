@@ -598,28 +598,32 @@ export default function App() {
                           onClick={() => buySeed(plant.id)}
                           disabled={isLocked || !canAfford}
                           className={cn(
-                            "chip relative flex w-full flex-col items-center gap-0.5 px-1.5 pb-1.5 pt-2 text-center",
-                            isLocked ? "opacity-50" : !canAfford && "opacity-70"
+                            "chip relative flex w-full flex-col items-center gap-0.5 px-1.5 pb-1.5 pt-2 text-center transition-all",
+                            isLocked
+                              ? "border-amber-500/25 bg-amber-500/[0.03] cursor-not-allowed"
+                              : canAfford
+                              ? "hover:border-emerald-500/40 hover:bg-emerald-500/[0.04]"
+                              : "opacity-80"
                           )}
                         >
-                          <span className={cn("text-2xl leading-none", isLocked && "grayscale")}>{plant.seedEmoji}</span>
-                          <span className="ink mt-1 w-full truncate text-[11px] font-medium">{plant.name}</span>
-                          {isLocked ? (
-                            <span className="muted flex items-center gap-1 text-[11px] font-semibold">
-                              <FaLock size={9} /> Lv {plant.levelRequired}
-                            </span>
-                          ) : (
-                            <span className={cn("text-[11px] font-semibold tabular-nums", canAfford ? "t-gold" : "muted")}>
-                              ${compact.format(plant.cost)}
+                          {isLocked && (
+                            <span className="absolute top-1 right-1 flex items-center gap-0.5 rounded bg-zinc-950/90 px-1 py-0.5 text-[8px] font-bold text-amber-400 border border-amber-500/40 shadow-xs">
+                              <FaLock size={7} />
+                              <span>Lv {plant.levelRequired}</span>
                             </span>
                           )}
+                          <span className="text-2xl leading-none">{plant.seedEmoji}</span>
+                          <span className="ink mt-1 w-full truncate text-[11px] font-medium">{plant.name}</span>
+                          <span className={cn("text-[11px] font-semibold tabular-nums", !isLocked && canAfford ? "t-gold" : "muted")}>
+                            ${compact.format(plant.cost)}
+                          </span>
                           <span className="muted text-[10px] leading-none">{formatDuration(plant.growTime)}</span>
                         </button>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className={tipClass}>
                       {isLocked
-                        ? `Unlocks at level ${plant.levelRequired}`
+                        ? `Locked - Unlocks at level ${plant.levelRequired} ($${plant.cost.toLocaleString()} to buy, sells for $${plant.sellPrice.toLocaleString()})`
                         : `${plant.name}: $${plant.cost.toLocaleString()} - sells for $${plant.sellPrice.toLocaleString()} - grows in ${formatDuration(plant.growTime)}`}
                     </TooltipContent>
                   </Tooltip>

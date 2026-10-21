@@ -8,7 +8,7 @@ import { Analytics } from "@vercel/analytics/react"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider>
+    <ThemeProvider defaultTheme="dark">
       <App />
       <Analytics />
     </ThemeProvider>

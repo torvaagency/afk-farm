@@ -1,160 +1,210 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, lazy, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useGameStore } from "./game/useGameStore"
 import { PLANTS } from "./game/constants"
+import GrowingPanel from "./game/GrowingPanel"
+import { useTheme } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
+
+const FarmScene3D = lazy(() => import("./game/FarmScene3D"))
+
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
 // React Icons
 import {
   FaCoins,
   FaBriefcase,
   FaLock,
-  FaChevronLeft,
-  FaChevronRight,
   FaStore,
   FaBolt,
-  FaMagic,
-  FaTerminal
+  FaSeedling,
+  FaComments,
+  FaEllipsisH,
+  FaTrashAlt,
+  FaPaperPlane,
+  FaTimes,
+  FaSun,
+  FaMoon,
 } from "react-icons/fa"
 import { GiPotionBall, GiCrystalGrowth } from "react-icons/gi"
-import { HiSparkles } from "react-icons/hi"
-import { HubConnectionBuilder, HubConnection, LogLevel, HubConnectionState } from "@microsoft/signalr"
-import { FaSun, FaMoon } from "react-icons/fa"
 
-const MagicGrowth = () => (
-  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-    <svg viewBox="0 0 100 100" className="w-full h-full opacity-60">
-      <motion.circle
-        cx="50"
-        cy="50"
-        r="40"
-        fill="none"
-        stroke="url(#magicGradient)"
-        strokeWidth="1"
-        strokeDasharray="10 5"
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 10, ease: "linear" }}
-      />
-      {[0, 72, 144, 216, 288].map((angle, i) => (
-        <motion.circle
-          key={i}
-          cx={50}
-          cy={50}
-          r="1.5"
-          fill="#22d3ee"
-          animate={{
-            cx: [
-              50 + 35 * Math.cos((angle * Math.PI) / 180),
-              50 + 35 * Math.cos(((angle + 360) * Math.PI) / 180)
-            ],
-            cy: [
-              50 + 35 * Math.sin((angle * Math.PI) / 180),
-              50 + 35 * Math.sin(((angle + 360) * Math.PI) / 180)
-            ],
-            opacity: [0.2, 1, 0.2],
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: 5,
-            ease: "linear",
-          }}
-        />
-      ))}
-      <defs>
-        <linearGradient id="magicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#22d3ee" />
-          <stop offset="50%" stopColor="#a855f7" />
-          <stop offset="100%" stopColor="#22d3ee" />
-        </linearGradient>
-      </defs>
-    </svg>
-    <div className="absolute inset-0">
-      {[...Array(5)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-0.5 h-0.5 bg-cyan-300 rounded-full blur-[1px]"
-          initial={{ x: "50%", y: "70%", opacity: 0 }}
-          animate={{
-            y: ["70%", "10%"],
-            x: ["45%", "55%", "40%", "60%"],
-            opacity: [0, 1, 0],
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: 3,
-            delay: i * 0.6,
-          }}
-        />
-      ))}
-    </div>
-  </div>
-)
+const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 })
+
+const formatDuration = (seconds: number) => {
+  if (seconds < 60) return `${seconds}s`
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`
+  return `${Math.round(seconds / 3600)}h`
+}
+
+const tipClass = "border border-slate-700 bg-slate-900 text-xs text-slate-100"
+
+const POTIONS = [
+  { id: "speed_potion", name: "Haste Essence", hint: "Consume for 2x growth speed", Icon: GiPotionBall, tone: "t-violet" },
+  { id: "harvest_potion", name: "Gatherer's Gale", hint: "Instantly harvest all ready crops", Icon: GiCrystalGrowth, tone: "t-gold" },
+  { id: "finish_potion", name: "Chrono Essence", hint: "Select, then click a growing crop to finish it", Icon: GiCrystalGrowth, tone: "t-sky" },
+] as const
+
+interface ConfirmDialogProps {
+  open: boolean
+  title: string
+  description: string
+  confirmLabel: string
+  tone: "amber" | "emerald" | "red"
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function ConfirmDialog({ open, title, description, confirmLabel, tone, onConfirm, onCancel }: ConfirmDialogProps) {
+  const toneClass = {
+    amber: "bg-amber-500 text-black hover:bg-amber-400",
+    emerald: "bg-emerald-500 text-black hover:bg-emerald-400",
+    red: "bg-red-600 text-white hover:bg-red-500",
+  }[tone]
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onCancel}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ scale: 0.96, opacity: 0, y: 8 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.96, opacity: 0, y: 8 }}
+            className="panel relative w-full max-w-sm p-5"
+          >
+            <h3 className="ink text-base font-semibold">{title}</h3>
+            <p className="muted mt-2 text-sm leading-relaxed">{description}</p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" size="sm" className="rounded-md" onClick={onCancel}>
+                Cancel
+              </Button>
+              <Button size="sm" className={cn("rounded-md font-semibold", toneClass)} onClick={onConfirm}>
+                {confirmLabel}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 export default function App() {
-  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellSeed, instantFinish, sellAllCrops, buySlot, sellSlot, nextSlotCost, lastSlotSellPrice, useItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
+  const { state, toasts, buySeed, plantSeed, harvestCrop, sellCrop, sellSeed, instantFinish, sellAllCrops, buySlot, sellSlot, nextSlotCost, lastSlotSellPrice, useItem: consumeItem, isSpeedBoosted, expToNextLevel, resetGame, addToast } = useGameStore()
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [showSellConfirm, setShowSellConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [slotToSell, setSlotToSell] = useState<number | null>(null)
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("theme")
-      return saved ? saved === "dark" : true
-    }
-    return true
-  })
-  const scrollRef = useRef<HTMLDivElement>(null)
+  
+  const { theme, setTheme } = useTheme()
+  const isDarkMode = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+  const toggleTheme = () => {
+    setTheme(isDarkMode ? "light" : "dark")
+  }
   const chatScrollRef = useRef<HTMLDivElement>(null)
 
   // Chat State
   const [messages, setMessages] = useState<{ id: string; user: string; message: string; timestamp: number }[]>([])
   const [currentMessage, setCurrentMessage] = useState("")
-  const [connection, setConnection] = useState<HubConnection | null>(null)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [username] = useState(() => `Player_${Math.floor(Math.random() * 9000) + 1000}`)
+  const [isChatConnected, setIsChatConnected] = useState(false)
+  const channelRef = useRef<ReturnType<NonNullable<typeof supabase>["channel"]> | null>(null)
 
   useEffect(() => {
-    // Use environment variable for production, fallback to local for dev
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5176";
-
-    const newConnection = new HubConnectionBuilder()
-      .withUrl(`${BACKEND_URL}/chatHub`)
-      .withAutomaticReconnect()
-      .configureLogging(LogLevel.Information)
-      .build()
-
-    setConnection(newConnection)
-  }, [])
-
-  useEffect(() => {
-    if (connection) {
-      connection.start()
-        .then(() => {
-          console.log("SignalR: Successfully connected to global channel.")
-          connection.on("ReceiveMessage", (user, message) => {
-            const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            setMessages(prev => [...prev, { id, user, message, timestamp: Date.now() }].slice(-50))
-          })
-        })
-        .catch(e => {
-          console.error("SignalR Connection Error: ", e)
-          addToast("Network Error: Global chat offline.", "xp")
-        })
+    if (!supabase) {
+      console.log("Supabase chat: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY not set. Using local channel mode.")
+      setIsChatConnected(true)
+      return
     }
-  }, [connection])
+
+    const client = supabase
+
+    // Initial load: fetch past messages from 'messages' table if it exists
+    const loadPastMessages = async () => {
+      try {
+        const { data, error } = await client
+          .from("messages")
+          .select("id, user, message, created_at")
+          .order("created_at", { ascending: false })
+          .limit(50)
+
+        if (!error && data && data.length > 0) {
+          const loaded = data.reverse().map((row: { id: string | number; user?: string; username?: string; message: string; created_at?: string }) => ({
+            id: String(row.id),
+            user: row.user || row.username || "Anonymous",
+            message: row.message,
+            timestamp: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+          }))
+          setMessages(loaded)
+        }
+      } catch (err) {
+        console.warn("Supabase initial messages fetch skipped:", err)
+      }
+    }
+    loadPastMessages()
+
+    // Subscribe to both real-time broadcast and DB inserts
+    const channel = client.channel("global-chat", {
+      config: { broadcast: { self: true } },
+    })
+
+    channel
+      .on("broadcast", { event: "chat_message" }, (payload) => {
+        if (payload?.payload) {
+          setMessages((prev) => [...prev, payload.payload].slice(-50))
+        }
+      })
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const newRow = payload.new as { id?: string | number; user?: string; username?: string; message?: string; created_at?: string }
+          if (newRow?.message) {
+            const formatted = {
+              id: String(newRow.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`),
+              user: newRow.user || newRow.username || "Anonymous",
+              message: newRow.message,
+              timestamp: newRow.created_at ? new Date(newRow.created_at).getTime() : Date.now(),
+            }
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === formatted.id)) return prev
+              return [...prev, formatted].slice(-50)
+            })
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setIsChatConnected(true)
+        } else if (status === "CHANNEL_ERROR") {
+          setIsChatConnected(false)
+          addToast("Chat connection issue", "xp")
+        }
+      })
+
+    channelRef.current = channel
+
+    return () => {
+      client.removeChannel(channel)
+    }
+  }, [addToast])
 
   useEffect(() => {
     if (chatScrollRef.current) {
@@ -163,1067 +213,611 @@ export default function App() {
   }, [messages, isChatOpen])
 
   const sendMessage = async () => {
-    if (connection && connection.state === HubConnectionState.Connected && currentMessage.trim()) {
+    const trimmed = currentMessage.trim()
+    if (!trimmed) return
+
+    const newMsg = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      user: username,
+      message: trimmed,
+      timestamp: Date.now(),
+    }
+
+    setCurrentMessage("")
+
+    if (supabase && channelRef.current) {
       try {
-        await connection.invoke("SendMessage", username, currentMessage)
-        setCurrentMessage("")
-      } catch (e) {
-        console.error("SignalR Send Error: ", e)
+        // Send via realtime broadcast
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "chat_message",
+          payload: newMsg,
+        })
+
+        // Also persist to Supabase database table if available
+        supabase
+          .from("messages")
+          .insert({
+            user: username,
+            message: trimmed,
+          })
+          .then(({ error }) => {
+            if (error) {
+              console.debug("Note: 'messages' table not configured or insert restricted:", error.message)
+            }
+          })
+      } catch (err) {
+        console.error("Supabase send error:", err)
+        // Ensure local feedback
+        setMessages((prev) => [...prev, newMsg].slice(-50))
       }
-    } else if (connection?.state !== HubConnectionState.Connected) {
-      addToast("Connecting to server...", "xp")
-    }
-  }
-
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => {
-      const next = !prev
-      localStorage.setItem("theme", next ? "dark" : "light")
-      return next
-    })
-  }
-
-  useEffect(() => {
-    const root = window.document.documentElement
-    if (isDarkMode) {
-      root.classList.add("dark")
-      root.classList.remove("light")
     } else {
-      root.classList.add("light")
-      root.classList.remove("dark")
-    }
-  }, [isDarkMode])
-
-  const magicStyle = "magic-panel rounded-none"
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const { scrollLeft } = scrollRef.current
-      const scrollTo = direction === "left" ? scrollLeft - 300 : scrollLeft + 300
-      scrollRef.current.scrollTo({ left: scrollTo, behavior: "smooth" })
+      // Local fallback when Supabase keys are not set yet
+      setMessages((prev) => [...prev, newMsg].slice(-50))
     }
   }
+
+  const [selectedPlot, setSelectedPlot] = useState<number | null>(null)
+
+  const plantSelectedSeed = (index: number) => {
+    if (!selectedSeed) return
+    const success = plantSeed(index, selectedSeed)
+    if (success && (state.inventory[selectedSeed] || 0) <= 1) {
+      setSelectedSeed(null)
+    }
+  }
+
+  // Clicking a plot does the obvious thing when there is one, otherwise it selects the plot
+  const handlePlotSelect = (index: number) => {
+    const slot = state.slots[index]
+    if (slot?.isHarvestable) {
+      harvestCrop(index)
+      return
+    }
+    if (!slot && selectedSeed) {
+      plantSelectedSeed(index)
+      return
+    }
+    if (slot && selectedItem === "finish_potion") {
+      instantFinish(index)
+      setSelectedItem(null)
+      return
+    }
+    setSelectedPlot((prev) => (prev === index ? null : index))
+  }
+
+  const ownedSeeds = Object.entries(state.inventory).filter(([, count]) => count > 0)
+  const ownedCrops = Object.values(PLANTS).filter((plant) => (state.crops[plant.id] || 0) > 0)
+  const cropsValue = ownedCrops.reduce((sum, plant) => sum + (state.crops[plant.id] || 0) * plant.sellPrice, 0)
+
+  const toastTone = {
+    success: "border-l-emerald-400",
+    info: "border-l-sky-400",
+    xp: "border-l-amber-400",
+    item: "border-l-violet-400",
+  } as const
 
   return (
-    <TooltipProvider>
-      <div className={cn(
-        "min-h-screen font-sans transition-colors duration-500",
-        isDarkMode ? "bg-black text-white selection:bg-cyan-900" : "bg-white text-black selection:bg-cyan-200"
-      )}>
-        <div className="scanline" />
-
-        {/* Toast Notifications - Arcane Whispers */}
-        <div className="fixed top-24 right-6 z-50 flex flex-col gap-2 pointer-events-none items-end">
+    <TooltipProvider delayDuration={200}>
+      <div className="ink flex min-h-screen flex-col font-sans transition-colors duration-300 selection:bg-emerald-500/30 lg:h-screen lg:overflow-hidden">
+        {/* Toast notifications */}
+        <div className="pointer-events-none fixed right-4 top-16 z-50 flex flex-col items-end gap-2">
           <AnimatePresence>
             {toasts.map((toast) => (
               <motion.div
                 key={toast.id}
-                initial={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, x: 50, transition: { duration: 0.3 } }}
-                className={cn(
-                  "px-8 py-1 border-r-2 shadow-[0_0_20px_rgba(0,0,0,0.5)] font-gamer text-[10px] uppercase tracking-tighter backdrop-blur-xl min-w-[180px]",
-                  isDarkMode ? "bg-black/90" : "bg-white/90 border-l border-t border-b border-black/5",
-                  toast.type === "success" && "border-emerald-500 text-emerald-400 text-glow-cyan",
-                  toast.type === "info" && "border-cyan-500 text-cyan-400 text-glow-cyan",
-                  toast.type === "xp" && "border-amber-500 text-amber-400",
-                  toast.type === "item" && "border-purple-500 text-purple-400 text-glow-purple"
-                )}
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 24, transition: { duration: 0.2 } }}
+                className={cn("panel ink min-w-[200px] border-l-4 px-3 py-2 text-sm font-medium", toastTone[toast.type])}
               >
-                <div className="flex items-center gap-2">
-                  <HiSparkles className="animate-pulse icon-themed" />
-                  {toast.message}
-                </div>
+                {toast.message}
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
 
-        {/* Header / Navbar - Magitech Core */}
-        <motion.header
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className={cn(
-            "sticky top-0 z-50 border-b backdrop-blur-md px-6 py-3",
-            isDarkMode ? "border-white/5 bg-black/80" : "border-black/5 bg-white/80"
-          )}
-        >
-          <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col">
-                <h1
-                  className="text-lg md:text-2xl font-gamer font-black tracking-tighter leading-none text-glow-cyan cursor-pointer"
-                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                >
-                  AFK FARM
-                </h1>
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="icon-themed text-[8px] uppercase tracking-widest font-bold flex items-center gap-1 cursor-help">
-                        <FaMagic size={8} /> SYSTEM_ONLINE
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                      AFK Farm System — Running
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {isSpeedBoosted && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 text-[8px] text-purple-400 uppercase font-bold animate-pulse text-glow-purple cursor-help">
-                          <FaBolt size={8} /> Chrono_Burst
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="bg-black border-purple-500/50 text-purple-400 font-gamer text-[10px]">
-                        2× Growth Speed Active!
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
+        {/* Header */}
+        <header className="app-header relative z-40 flex h-14 shrink-0 items-center justify-between gap-3 px-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+              <FaSeedling size={16} />
             </div>
-
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2 md:gap-4 w-auto md:w-44">
+            <div className="flex items-center gap-3">
+              <h1
+                className="ink cursor-default text-base font-semibold tracking-tight"
+              >
+                AFK Farm
+              </h1>
+              {isSpeedBoosted && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex flex-col gap-1 cursor-help items-end">
-                      <div className="flex items-center justify-between w-full">
-                        <div className="text-[10px] font-gamer font-bold text-cyan-400 flex items-center gap-2 mr-3">
-                          Level {state.level}
-                        </div>
-                        <div className="text-[9px] text-neutral-500 font-mono tracking-widest">
-                          EXP {state.exp}/{expToNextLevel}
-                        </div>
-                      </div>
-                      <div className={cn(
-                        "w-full h-1 overflow-hidden border relative",
-                        isDarkMode ? "bg-neutral-900 border-white/5" : "bg-neutral-100 border-black/5"
-                      )}>
-                        <motion.div
-                          className="h-full bg-cyan-500 shadow-[0_0_15px_#22d3ee]"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(state.exp / expToNextLevel) * 100}%` }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
-                      </div>
-                    </div>
+                    <span className="pill t-violet cursor-help">
+                      <FaBolt size={10} /> 2x growth
+                    </span>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                    {expToNextLevel - state.exp} EXP to Level {state.level + 1}
+                  <TooltipContent side="bottom" className={tipClass}>
+                    Haste Essence active
                   </TooltipContent>
                 </Tooltip>
-              </div>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className={cn(
-                    "flex items-center gap-3 px-5 py-2 border shadow-[0_0_15px_rgba(34,211,238,0.1)] transition-colors duration-500 cursor-help",
-                    isDarkMode ? "bg-black border-cyan-500/20" : "bg-white border-cyan-500/40"
-                  )}>
-                    <FaCoins size={16} className={cn("arcane-glow", isDarkMode ? "text-amber-400" : "text-amber-600")} />
-                    <span className={cn("font-gamer font-bold text-base tracking-tight text-glow-cyan", isDarkMode ? "text-white" : "text-black")}>{state.money.toLocaleString()}</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-black border-amber-500/50 text-amber-500 font-gamer text-[10px]">
-                  Available Coins
-                </TooltipContent>
-              </Tooltip>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className={cn(
-                  "h-10 w-10 rounded-none border text-cyan-400 transition-all",
-                  isDarkMode ? "border-white/10 hover:bg-white/5" : "border-black/10 hover:bg-black/5"
-                )}
-              >
-                {isDarkMode ? <FaSun size={18} /> : <FaMoon size={18} />}
-              </Button>
+              )}
             </div>
           </div>
-        </motion.header>
 
-        <main className="mx-auto max-w-6xl p-4 space-y-4">
-          {/* Farm Grid - The Celestial Garden */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-gamer font-bold flex items-center gap-3 text-glow-cyan">
-                Field
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className="font-mono text-[9px] text-neutral-500 border-neutral-800 cursor-help">Node_{state.unlockedSlots}/16</Badge>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                    Field Node Capacity
-                  </TooltipContent>
-                </Tooltip>
-              </h2>
-              <AnimatePresence>
-                {selectedSeed && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="flex items-center gap-2"
-                  >
-                    <span className="text-[9px] text-neutral-500 font-gamer uppercase tracking-widest">Planting:</span>
-                    <div className="bg-cyan-500/10 border border-cyan-500/50 px-4 py-1 flex items-center gap-3 animate-magic-float shadow-[0_0_10px_rgba(34,211,238,0.2)]">
-                      <span className="text-[10px] font-gamer text-cyan-400 uppercase tracking-widest">
-                        {PLANTS[selectedSeed].name}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-3 w-3 rounded-none hover:bg-cyan-500/20 p-0 text-white"
-                        onClick={() => setSelectedSeed(null)}
-                      >
-                        ×
-                      </Button>
-                    </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="hidden w-40 cursor-help flex-col gap-1 sm:flex">
+                  <div className="flex items-baseline justify-between text-xs">
+                    <span className="ink font-semibold">Level {state.level}</span>
+                    <span className="muted tabular-nums">
+                      {state.exp}/{expToNextLevel} XP
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-3)]">
+                    <motion.div
+                      className="h-full rounded-full bg-emerald-400"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, (state.exp / expToNextLevel) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className={tipClass}>
+                {expToNextLevel - state.exp} XP to level {state.level + 1}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="chip flex h-9 cursor-help items-center gap-2 px-3">
+                  <FaCoins size={14} className="t-gold" />
+                  <span className="ink text-sm font-semibold tabular-nums">{state.money.toLocaleString()}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className={tipClass}>
+                Available coins
+              </TooltipContent>
+            </Tooltip>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsChatOpen((open) => !open)}
+              className={cn("chip h-9 gap-2 rounded-lg px-3 text-xs", isChatOpen && "border-emerald-400")}
+              data-active={isChatOpen}
+            >
+              <FaComments size={13} />
+              <span className="hidden md:inline">Chat</span>
+            </Button>
+
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="chip h-9 w-9 rounded-lg" aria-label="Toggle theme">
+              {isDarkMode ? <FaSun size={14} /> : <FaMoon size={14} />}
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="chip h-9 w-9 rounded-lg" aria-label="More">
+                  <FaEllipsisH size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[170px] text-sm">
+                <DropdownMenuItem onClick={() => setShowResetConfirm(true)} className="t-danger cursor-pointer focus:text-red-400">
+                  <FaTrashAlt /> Reset save
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        {/* Chat popover */}
+        <AnimatePresence>
+          {isChatOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="panel fixed right-4 top-16 z-[60] flex w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden"
+            >
+              <div className="panel-head">
+                <div className="panel-title">
+                  <span className={cn("h-2 w-2 rounded-full", isChatConnected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />
+                  Global chat
+                  {isSupabaseConfigured && (
+                    <span className="pill text-[9px] t-sky">Supabase</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="muted text-[11px]">{username}</span>
+                  <button className="muted hover:text-[color:var(--ink)]" onClick={() => setIsChatOpen(false)} aria-label="Close chat">
+                    <FaTimes size={12} />
+                  </button>
+                </div>
+              </div>
+              <ScrollArea className="h-64 w-full" ref={chatScrollRef}>
+                <div className="space-y-2 p-3">
+                  {messages.length === 0 ? (
+                    <div className="muted py-10 text-center text-xs">No messages yet. Say hello!</div>
+                  ) : (
+                    messages.map((msg) => (
+                      <div key={msg.id} className="text-[13px] leading-snug">
+                        <span className={cn("mr-2 text-xs font-semibold", msg.user === username ? "t-accent" : "t-violet")}>{msg.user}</span>
+                        <span className="ink opacity-90">{msg.message}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+              <div className="flex gap-2 border-t border-[color:var(--line)] p-2">
+                <input
+                  type="text"
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                  placeholder="Send a message..."
+                  className="field-input"
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={!currentMessage.trim()}
+                  size="icon"
+                  className="h-9 w-9 shrink-0 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400"
+                  aria-label="Send"
+                >
+                  <FaPaperPlane size={12} />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Dashboard */}
+        <main className="grid min-h-0 flex-1 gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-[minmax(0,1fr)_auto]">
+          {/* Field */}
+          <section className="panel flex h-[380px] min-h-0 flex-col overflow-hidden lg:col-start-1 lg:row-start-1 lg:h-auto">
+            <div className="panel-head">
+              <div className="panel-title">
+                <FaSeedling size={12} /> Field
+                <span className="pill normal-case tracking-normal">{state.unlockedSlots} plots</span>
+              </div>
+              <AnimatePresence mode="wait">
+                {selectedSeed ? (
+                  <motion.div key="seed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 text-xs">
+                    <span className="muted">Planting</span>
+                    <span className="pill t-accent">
+                      {PLANTS[selectedSeed].emoji} {PLANTS[selectedSeed].name}
+                      <button onClick={() => setSelectedSeed(null)} aria-label="Cancel planting" className="ml-1 opacity-70 hover:opacity-100">
+                        <FaTimes size={10} />
+                      </button>
+                    </span>
                   </motion.div>
+                ) : selectedItem === "finish_potion" ? (
+                  <motion.div key="item" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 text-xs">
+                    <span className="muted">Click a growing crop</span>
+                    <span className="pill t-sky">
+                      Chrono Essence
+                      <button onClick={() => setSelectedItem(null)} aria-label="Cancel" className="ml-1 opacity-70 hover:opacity-100">
+                        <FaTimes size={10} />
+                      </button>
+                    </span>
+                  </motion.div>
+                ) : (
+                  <motion.span key="hint" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="muted hidden text-xs sm:inline">
+                    Drag to orbit - scroll to zoom - click a plot
+                  </motion.span>
                 )}
               </AnimatePresence>
             </div>
 
-            <div className={cn("grid grid-cols-4 md:grid-cols-8 gap-2 p-3 neon-border-emerald", magicStyle)}>
-              {state.slots.map((slot, i) => {
-                const isUnlocked = i < state.unlockedSlots
-                const isNextToUnlock = i === state.unlockedSlots
-                const unlockCost = nextSlotCost
+            <div className="relative min-h-[240px] flex-1">
+              <div className="absolute inset-0">
+                <Suspense
+                  fallback={<div className="muted flex h-full w-full animate-pulse items-center justify-center text-xs">Loading field...</div>}
+                >
+                  <FarmScene3D
+                    slots={state.slots}
+                    unlockedSlots={state.unlockedSlots}
+                    nextSlotCost={nextSlotCost}
+                    money={state.money}
+                    isSpeedBoosted={isSpeedBoosted}
+                    isDarkMode={isDarkMode}
+                    selectedPlot={selectedPlot}
+                    onSelectPlot={handlePlotSelect}
+                    onBuySlot={buySlot}
+                  />
+                </Suspense>
+              </div>
 
-                if (!isUnlocked) {
-                  if (!isNextToUnlock) return null
-
+              <AnimatePresence>
+                {selectedPlot !== null && selectedPlot < state.unlockedSlots && (() => {
+                  const slot = state.slots[selectedPlot]
+                  const plant = slot ? PLANTS[slot.plantId] : null
                   return (
-                    <Tooltip key={i}>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          layout
-                          initial={{ opacity: 0, scale: 0.5 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => buySlot()}
-                          disabled={state.money < unlockCost}
+                    <motion.div
+                      key="plot-actions"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="panel absolute bottom-3 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 px-3 py-2 text-xs"
+                    >
+                      <span className="ink mr-1 font-medium">
+                        Plot {selectedPlot + 1}
+                        <span className="muted font-normal"> - {slot ? `${plant?.name} (${slot.isHarvestable ? "ready" : "growing"})` : "empty"}</span>
+                      </span>
+                      {slot?.isHarvestable && (
+                        <Button size="sm" className="h-7 rounded-md bg-emerald-500 px-3 text-xs text-black hover:bg-emerald-400" onClick={() => harvestCrop(selectedPlot)}>
+                          Harvest
+                        </Button>
+                      )}
+                      {slot && !slot.isHarvestable && selectedItem === "finish_potion" && (
+                        <Button size="sm" className="h-7 rounded-md bg-sky-500 px-3 text-xs text-black hover:bg-sky-400" onClick={() => { instantFinish(selectedPlot); setSelectedItem(null) }}>
+                          Use Chrono Essence
+                        </Button>
+                      )}
+                      {!slot && selectedSeed && (
+                        <Button size="sm" className="h-7 rounded-md bg-emerald-500 px-3 text-xs text-black hover:bg-emerald-400" onClick={() => plantSelectedSeed(selectedPlot)}>
+                          Plant {PLANTS[selectedSeed].name}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="t-danger h-7 rounded-md px-3 text-xs"
+                        disabled={state.unlockedSlots <= 1 || slot !== null}
+                        onClick={() => setSlotToSell(selectedPlot)}
+                      >
+                        Sell plot ${compact.format(lastSlotSellPrice)}
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 rounded-md" onClick={() => setSelectedPlot(null)} aria-label="Close">
+                        <FaTimes size={11} />
+                      </Button>
+                    </motion.div>
+                  )
+                })()}
+              </AnimatePresence>
+            </div>
+          </section>
+
+          {/* Seed shop */}
+          <section className="panel lg:col-start-1 lg:row-start-2">
+            <div className="panel-head">
+              <div className="panel-title">
+                <FaStore size={12} /> Seed shop
+              </div>
+              <span className="muted text-xs">Click a seed to buy</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 p-2 sm:grid-cols-5 md:grid-cols-6 xl:grid-cols-9">
+              {Object.values(PLANTS).map((plant) => {
+                const isLocked = state.level < plant.levelRequired
+                const canAfford = state.money >= plant.cost
+                return (
+                  <Tooltip key={plant.id}>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <button
+                          onClick={() => buySeed(plant.id)}
+                          disabled={isLocked || !canAfford}
                           className={cn(
-                            "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 overflow-hidden border",
-                            "bg-cyan-500/5 border-cyan-500/30 cursor-pointer"
+                            "chip relative flex w-full flex-col items-center gap-0.5 px-1.5 pb-1.5 pt-2 text-center",
+                            isLocked ? "opacity-50" : !canAfford && "opacity-70"
                           )}
                         >
-                          <div className="flex flex-col items-center gap-1 text-center">
-                            <div className={cn("text-[10px] font-gamer font-bold", isDarkMode ? "text-cyan-400" : "text-cyan-600")}>
-                              BUY_NODE
-                            </div>
-                            <div className={cn("text-[9px] font-mono", isDarkMode ? "text-white opacity-40" : "text-black opacity-40")}>
-                              ${unlockCost.toLocaleString()}
-                            </div>
-                          </div>
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                        Unlock Next Node for ${unlockCost.toLocaleString()}
-                      </TooltipContent>
-                    </Tooltip>
-                  )
-                }
-
-                const plant = slot ? PLANTS[slot.plantId] : null
-                const elapsedSeconds = slot ? (Date.now() - slot.plantedAt) / 1000 : 0
-                const speedMultiplier = isSpeedBoosted ? 2 : 1
-                const adjustedElapsed = elapsedSeconds * speedMultiplier
-                const remainingSeconds = slot ? Math.max(0, Math.ceil((plant!.growTime - adjustedElapsed) / speedMultiplier)) : 0
-                const progress = slot ? Math.min(100, (adjustedElapsed / plant!.growTime) * 100) : 0
-
-                let currentEmoji = "🕳️"
-                if (slot) {
-                  const stageIndex = Math.floor((progress / 100) * (plant!.stages.length - 1))
-                  currentEmoji = plant!.stages[stageIndex]
-                }
-
-                return (
-                  <Tooltip key={i}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <TooltipTrigger asChild>
-                          <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                              "relative aspect-square flex flex-col items-center justify-center transition-all duration-500 group overflow-hidden border",
-                              !slot ? (isDarkMode ? "border-white/5" : "border-black/5") : (isDarkMode ? "border-white/10 shadow-2xl" : "border-black/10 shadow-lg"),
-                              slot?.isHarvestable && "border-cyan-400 shadow-[0_0_25px_#22d3ee55] animate-magic-float"
-                            )}
-                            style={{
-                              backgroundImage: isDarkMode ? 'linear-gradient(rgba(0,10,20,0.3), rgba(0,10,20,0.3)), url(/farm-patch.jpg)' : 'linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url(/farm-patch.jpg)',
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center'
-                            }}
-                          >
-                            <motion.span
-                              animate={slot?.isHarvestable ? { scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] } : {}}
-                              transition={slot?.isHarvestable ? { repeat: Infinity, duration: 2 } : {}}
-                              className={cn(
-                                "text-2xl transition-transform duration-700 arcane-glow",
-                                !slot && "opacity-5 group-hover:opacity-40 grayscale"
-                              )}
-                            >
-                              {currentEmoji}
-                            </motion.span>
-
-                            {slot && !slot.isHarvestable && (
-                              <>
-                                <MagicGrowth />
-                                <div className="absolute top-1 right-1 text-[7px] px-1.5 font-mono bg-black/90 text-cyan-500 border border-cyan-500/30">
-                                  {remainingSeconds}s
-                                </div>
-                                <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
-                                  <motion.div
-                                    className={cn(
-                                      "h-full bg-cyan-500 shadow-[0_0_10px_#22d3ee]",
-                                      isSpeedBoosted && "bg-purple-400 shadow-[0_0_10px_#a855f7]"
-                                    )}
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progress}%` }}
-                                  />
-                                </div>
-                              </>
-                            )}
-
-                            {slot?.isHarvestable && (
-                              <div className="absolute inset-0 bg-cyan-500/5 flex items-center justify-center overflow-hidden">
-                                <motion.div
-                                  animate={{ rotate: 360 }}
-                                  transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-                                  className="w-full h-full border border-cyan-500/10 rounded-full scale-[1.5]"
-                                />
-                                <div className="text-cyan-300 font-gamer text-[8px] tracking-[0.2em] animate-pulse text-glow-cyan">BLOOMED</div>
-                              </div>
-                            )}
-                          </motion.button>
-                        </TooltipTrigger>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[150px]">
-                        {slot?.isHarvestable && (
-                          <DropdownMenuItem onClick={() => harvestCrop(i)} className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer text-emerald-400">
-                            Harvest {plant?.name}
-                          </DropdownMenuItem>
-                        )}
-                        {slot && !slot.isHarvestable && selectedItem === "finish_potion" && (
-                          <DropdownMenuItem onClick={() => { instantFinish(i); setSelectedItem(null); }} className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer text-purple-400">
-                            Use Chrono-Essence
-                          </DropdownMenuItem>
-                        )}
-                        {!slot && selectedSeed && (
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              const success = plantSeed(i, selectedSeed);
-                              if (success && (state.inventory[selectedSeed] || 0) <= 1) {
-                                setSelectedSeed(null);
-                              }
-                            }} 
-                            className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer text-cyan-400"
-                          >
-                            Plant {PLANTS[selectedSeed].name}
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => setSlotToSell(i)}
-                          disabled={state.unlockedSlots <= 1 || slot !== null}
-                          className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer text-red-400"
-                        >
-                          Sell Patch for ${lastSlotSellPrice.toLocaleString()}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-white/5" />
-                        <div className="px-2 py-1.5 text-neutral-500 opacity-60">
-                          {slot ? `Status: ${slot.isHarvestable ? "Ready" : "Growing"}` : "Status: Empty"}
-                        </div>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                      {slot?.isHarvestable 
-                        ? `Harvest ${plant?.name}` 
-                        : slot 
-                          ? `Growing ${plant?.name} (${remainingSeconds}s)` 
-                          : selectedSeed 
-                            ? `Plant ${PLANTS[selectedSeed].name}` 
-                            : (state.unlockedSlots > 1)
-                              ? `Empty Node (Click to open menu)`
-                              : "Empty Node"}
+                          <span className={cn("text-2xl leading-none", isLocked && "grayscale")}>{plant.seedEmoji}</span>
+                          <span className="ink mt-1 w-full truncate text-[11px] font-medium">{plant.name}</span>
+                          {isLocked ? (
+                            <span className="muted flex items-center gap-1 text-[11px] font-semibold">
+                              <FaLock size={9} /> Lv {plant.levelRequired}
+                            </span>
+                          ) : (
+                            <span className={cn("text-[11px] font-semibold tabular-nums", canAfford ? "t-gold" : "muted")}>
+                              ${compact.format(plant.cost)}
+                            </span>
+                          )}
+                          <span className="muted text-[10px] leading-none">{formatDuration(plant.growTime)}</span>
+                        </button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className={tipClass}>
+                      {isLocked
+                        ? `Unlocks at level ${plant.levelRequired}`
+                        : `${plant.name}: $${plant.cost.toLocaleString()} - sells for $${plant.sellPrice.toLocaleString()} - grows in ${formatDuration(plant.growTime)}`}
                     </TooltipContent>
                   </Tooltip>
                 )
               })}
             </div>
-          </motion.section>
+          </section>
 
-          {/* Middle Section: Mana & Artifacts */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-3"
-          >
-            <Card className={cn(
-              magicStyle,
-              isDarkMode ? "border-white/5" : "border-black/20"
-            )}>
-              <CardHeader className={cn(
-                "py-1.5 px-4 border-b",
-                isDarkMode ? "border-white/5 bg-white/5" : "border-black/10 bg-black/5"
-              )}>
-                <CardTitle className="text-[10px] font-gamer font-bold flex items-center gap-3 tracking-widest uppercase icon-themed">
-                  <FaBriefcase size={10} className="icon-themed" /> Inventory
-                </CardTitle>
-
-              </CardHeader>
-              <CardContent className="p-2 px-4">
-                <ScrollArea className="h-12 w-full">
-                  <div className="flex flex-wrap gap-2 min-h-[30px]">
-                    <AnimatePresence>
-                      {Object.entries(state.inventory).map(([id, count]) => {
-                        if (count === 0) return null
-                        const plant = PLANTS[id]
-                        return (
-                          <Tooltip key={id}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <TooltipTrigger asChild>
-                                  <motion.button
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    whileHover={{ backgroundColor: "rgba(34, 211, 238, 0.05)", borderColor: "rgba(34, 211, 238, 0.5)" }}
-                                    className={cn(
-                                      "px-3 py-1 border flex items-center gap-3 transition-all",
-                                      selectedSeed === id ? "border-cyan-500 text-cyan-400 bg-cyan-500/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]" : (isDarkMode ? "border-white/5 text-neutral-400" : "border-black/5 text-neutral-600")
-                                    )}
-                                  >
-                                    <span className="text-lg arcane-glow">{plant.emoji}</span>
-                                    <span className="text-[10px] font-mono font-bold">x{count}</span>
-                                  </motion.button>
-                                </TooltipTrigger>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px] min-w-[120px]">
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setSelectedSeed(id)
-                                    setSelectedItem(null)
-                                  }}
-                                  className="hover:bg-cyan-500/20 focus:bg-cyan-500/20 cursor-pointer"
-                                >
-                                  Select {plant.name}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => sellSeed(id)}
-                                  className="hover:bg-red-500/20 focus:bg-red-500/20 cursor-pointer text-red-400"
-                                >
-                                  Sell 1x for ${Math.floor(plant.cost * 0.5)}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                              {plant.name} Seeds (Click for options)
-                            </TooltipContent>
-                          </Tooltip>
-                        )
-                      })}
-                    </AnimatePresence>
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            <Card className={cn(magicStyle, "neon-border-purple")}>
-              <CardHeader className="py-1.5 px-4 border-b border-purple-500/20 bg-purple-500/5">
-                <CardTitle className="text-[10px] font-gamer font-bold text-purple-400 flex items-center gap-3 tracking-widest text-glow-purple uppercase">
-                  <GiPotionBall size={14} className="icon-themed" /> Potions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-2 px-4">
-                <div className="flex flex-wrap gap-3 min-h-[40px] items-center">
-                  <AnimatePresence>
-                    {(state.items?.speed_potion || 0) > 0 || (state.items?.harvest_potion || 0) > 0 || (state.items?.finish_potion || 0) > 0 ? (
-                      <div className="flex flex-wrap gap-3">
-                        {(state.items?.speed_potion || 0) > 0 && (
-                          <Tooltip key="speed_potion">
-                            <TooltipTrigger asChild>
-                              <motion.button
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0, opacity: 0 }}
-                                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)" }}
-                                onClick={() => useItem("speed_potion")}
-                                className={cn(
-                                  "px-4 py-1 border flex items-center gap-3 transition-all",
-                                  isDarkMode ? "bg-black border-purple-500 hover:bg-purple-500/10" : "bg-white border-purple-400 hover:bg-purple-400/10"
-                                )}
-                              >
-                                <GiPotionBall size={16} className="text-purple-400" />
-                                <div className="text-[9px] font-gamer font-bold text-purple-300 uppercase tracking-widest">
-                                  Haste_Essence [x{state.items.speed_potion}]
-                                </div>
-                              </motion.button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-black border-purple-500/50 text-purple-400 font-gamer text-[10px]">
-                              Consume for 2x Growth Speed
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-
-                        {(state.items?.harvest_potion || 0) > 0 && (
-                          <Tooltip key="harvest_potion">
-                            <TooltipTrigger asChild>
-                              <motion.button
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0, opacity: 0 }}
-                                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(245, 158, 11, 0.3)" }}
-                                onClick={() => useItem("harvest_potion")}
-                                className={cn(
-                                  "px-4 py-1 border flex items-center gap-3 transition-all",
-                                  isDarkMode ? "bg-black border-amber-500 hover:bg-amber-500/10" : "bg-white border-amber-400 hover:bg-amber-400/10"
-                                )}
-                              >
-                                <GiCrystalGrowth size={16} className="text-amber-400" />
-                                <div className="text-[9px] font-gamer font-bold text-amber-300 uppercase tracking-widest">
-                                  Gatherer_Gale [x{state.items.harvest_potion}]
-                                </div>
-                              </motion.button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-black border-amber-500/50 text-amber-500 font-gamer text-[10px]">
-                              Instantly Harvest All Ready Crops
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-
-                        {(state.items?.finish_potion || 0) > 0 && (
-                          <Tooltip key="finish_potion">
-                            <TooltipTrigger asChild>
-                              <motion.button
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0, opacity: 0 }}
-                                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(34, 211, 238, 0.3)" }}
-                                onClick={() => {
-                                  if (selectedItem === "finish_potion") {
-                                    setSelectedItem(null)
-                                  } else {
-                                    setSelectedItem("finish_potion")
-                                    setSelectedSeed(null)
-                                  }
-                                }}
-                                className={cn(
-                                  "px-4 py-1 border flex items-center gap-3 transition-all",
-                                  selectedItem === "finish_potion" 
-                                    ? "bg-cyan-500/20 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.3)]" 
-                                    : (isDarkMode ? "bg-black border-cyan-500/50 hover:bg-cyan-500/10" : "bg-white border-cyan-400/50 hover:bg-cyan-400/10")
-                                )}
-                              >
-                                <GiCrystalGrowth size={16} className="text-cyan-400" />
-                                <div className="text-[9px] font-gamer font-bold text-cyan-300 uppercase tracking-widest">
-                                  Chrono_Essence [x{state.items.finish_potion}]
-                                </div>
-                              </motion.button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                              {selectedItem === "finish_potion" ? "Target a growing crop to finish" : "Select to instantly finish one crop"}
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-[8px] font-gamer text-purple-500/20 italic uppercase tracking-widest">No Elixirs Found</div>
-                    )}
-                  </AnimatePresence>
+          {/* Sidebar: inventory, potions, sell station */}
+          <aside className="flex min-h-0 flex-col gap-3 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+            <section className="panel shrink-0">
+              <div className="panel-head">
+                <div className="panel-title">
+                  <FaBriefcase size={12} /> Inventory
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Shop - The Grand Bazaar */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-2"
-          >
-            <Card className={cn(
-              magicStyle,
-              isDarkMode ? "border-white/5" : "border-black/20",
-              "pb-2"
-            )}>
-              <CardHeader className={cn(
-                "py-2 px-5 border-b flex flex-row items-center justify-between",
-                isDarkMode ? "border-white/5 bg-white/5" : "border-black/10 bg-black/5"
-              )}>
-                <CardTitle className="text-[10px] font-gamer font-bold flex items-center gap-3 opacity-80 tracking-widest">
-                  <FaStore size={14} className="icon-themed" /> Seed Shop
-                </CardTitle>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className={cn(
-                      "h-7 w-7 rounded-none border hover:border-cyan-500/50",
-                      isDarkMode ? "border-white/10 bg-black text-white" : "border-black/10 bg-white text-black"
-                    )}
-                    onClick={() => scroll("left")}
-                  >
-                    <FaChevronLeft size={10} />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className={cn(
-                      "h-7 w-7 rounded-none border hover:border-cyan-500/50",
-                      isDarkMode ? "border-white/10 bg-black text-white" : "border-black/10 bg-white text-black"
-                    )}
-                    onClick={() => scroll("right")}
-                  >
-                    <FaChevronRight size={10} />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0 relative">
-                <ScrollArea ref={scrollRef} className="w-full whitespace-nowrap">
-                  <div className="flex p-3 gap-4 pb-6">
-                    {Object.values(PLANTS).map((plant) => {
-                      const isLocked = state.level < plant.levelRequired
-                      return (
-                        <motion.div
-                          key={plant.id}
-                          whileHover={!isLocked ? { y: -4, borderColor: "rgba(34, 211, 238, 0.3)" } : {}}
-                          className={cn(
-                            "inline-flex flex-col min-w-[140px] p-3 transition-all rounded-none relative border",
-                            isDarkMode ? "border-white/5 bg-black/60" : "border-black/5 bg-white/60",
-                            isLocked && "opacity-40 grayscale"
-                          )}
-                        >
-                          {isLocked && (
-                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 pointer-events-none">
-                              <FaLock size={14} className="text-cyan-400 arcane-glow" />
-                              <div className="bg-black/80 px-2 py-0.5 border border-cyan-500/30">
-                                <span className="text-[10px] font-gamer text-cyan-300 tracking-[0.2em] font-bold text-glow-cyan">LOCKED_L{plant.levelRequired}</span>
-                              </div>
-                            </div>
-                          )}
-                          <div className={cn("flex items-center justify-center mb-3 h-14 w-full border-b", isDarkMode ? "bg-black/40 border-white/5" : "bg-white/40 border-black/5")}>
-                            <span className={cn("text-3xl group-hover:scale-125 transition-transform duration-500 arcane-glow", isLocked && "opacity-20")}>{plant.seedEmoji}</span>
-                          </div>
-                          <div className="mb-3">
-                            <h3 className={cn("font-gamer font-bold text-[10px] truncate tracking-widest opacity-80", isDarkMode ? "text-white" : "text-black")}>{plant.name}</h3>
-                            <div className="flex items-center justify-between mt-1">
-                              <div className="text-[11px] font-mono font-bold text-amber-500 text-glow-cyan">
-                                ${plant.cost.toLocaleString()}
-                              </div>
-                              <div className="text-[9px] text-neutral-600 font-mono font-bold uppercase">
-                                {plant.growTime}S
-                              </div>
-                            </div>
-                          </div>
-                          <Tooltip>
+                <span className="muted text-xs">{ownedSeeds.reduce((n, [, c]) => n + c, 0)} seeds</span>
+              </div>
+              <div className="flex min-h-[3.25rem] flex-wrap content-start gap-1.5 p-2">
+                {ownedSeeds.length === 0 ? (
+                  <span className="muted self-center px-1 text-xs">No seeds. Buy some from the shop.</span>
+                ) : (
+                  ownedSeeds.map(([id, count]) => {
+                    const plant = PLANTS[id]
+                    return (
+                      <Tooltip key={id}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <TooltipTrigger asChild>
-                              <div className="flex flex-col gap-1.5">
-                                <Button
-                                  size="sm"
-                                  onClick={() => buySeed(plant.id)}
-                                  disabled={state.money < plant.cost || isLocked}
-                                  className="w-full bg-cyan-600/80 hover:bg-cyan-500 text-black rounded-none h-7 text-[9px] font-gamer font-bold border-none tracking-[0.2em]"
-                                >
-                                  PURCHASE
-                                </Button>
-                              </div>
+                              <button
+                                data-active={selectedSeed === id}
+                                className="chip flex items-center gap-1.5 px-2 py-1"
+                              >
+                                <span className="text-lg leading-none">{plant.emoji}</span>
+                                <span className="ink text-xs font-semibold tabular-nums">{count}</span>
+                              </button>
                             </TooltipTrigger>
-                            <TooltipContent className="bg-black border-cyan-500/50 text-cyan-400 font-gamer text-[10px]">
-                              {isLocked ? `Unlock at Level ${plant.levelRequired}` : `Buy ${plant.name} Seed for $${plant.cost}`}
-                            </TooltipContent>
-                          </Tooltip>
-                        </motion.div>
-                      )
-                    })}
-                  </div>
-                  <ScrollBar orientation="horizontal" className="h-2" />
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </motion.section>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="min-w-[150px] text-sm">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedSeed(id)
+                                setSelectedItem(null)
+                              }}
+                              className="cursor-pointer"
+                            >
+                              Plant {plant.name}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => sellSeed(id)} className="t-danger cursor-pointer focus:text-red-400">
+                              Sell 1x for ${Math.floor(plant.cost * 0.5).toLocaleString()}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <TooltipContent className={tipClass}>{plant.name} seeds - click for options</TooltipContent>
+                      </Tooltip>
+                    )
+                  })
+                )}
+              </div>
+            </section>
 
-          {/* Sell Station - Alchemy & Transmutation */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="space-y-2"
-          >
-            <Card className={cn(magicStyle, "neon-border-amber")}>
-              <CardHeader className="py-2 px-5 border-b border-amber-500/20 bg-amber-500/5 flex flex-row items-center justify-between">
-                <CardTitle className="text-[10px] font-gamer font-bold text-amber-500 flex items-center gap-3 tracking-widest">
-                  <GiCrystalGrowth size={16} className="icon-themed" /> Sell Station
-                </CardTitle>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      className="bg-amber-600/80 hover:bg-amber-500 text-black font-gamer font-bold h-7 rounded-none px-5 text-[9px] border-none tracking-[0.2em]"
-                      onClick={() => setShowSellConfirm(true)}
-                      disabled={Object.values(state.crops).every(count => count === 0)}
-                    >
-                      TRANSMUTE_ALL
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-black border-amber-500/50 text-amber-500 font-gamer text-[10px]">
-                    Sell All Harvested Crops
-                  </TooltipContent>
-                </Tooltip>
-              </CardHeader>
-              <CardContent className="p-3">
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                  <AnimatePresence>
-                    {Object.values(PLANTS).map((plant) => {
+            <section className="panel shrink-0">
+              <div className="panel-head">
+                <div className="panel-title">
+                  <GiPotionBall size={14} /> Potions
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 p-2">
+                {POTIONS.map(({ id, name, hint, Icon, tone }) => {
+                  const count = state.items?.[id] || 0
+                  const active = selectedItem === id
+                  return (
+                    <Tooltip key={id}>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <button
+                            disabled={count === 0}
+                            data-active={active}
+                            onClick={() => {
+                              if (id === "finish_potion") {
+                                if (active) {
+                                  setSelectedItem(null)
+                                } else {
+                                  setSelectedItem("finish_potion")
+                                  setSelectedSeed(null)
+                                }
+                              } else {
+                                consumeItem(id)
+                              }
+                            }}
+                            className={cn("chip flex w-full flex-col items-center gap-0.5 px-1 py-1.5", count === 0 && "opacity-40")}
+                          >
+                            <Icon size={18} className={tone} />
+                            <span className="ink w-full truncate text-[10px] font-medium">{name.split(" ")[0]}</span>
+                            <span className="muted text-[11px] font-semibold tabular-nums">x{count}</span>
+                          </button>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className={tipClass}>
+                        {name}: {hint}
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                })}
+              </div>
+            </section>
+
+            <GrowingPanel
+              slots={state.slots}
+              unlockedSlots={state.unlockedSlots}
+              isSpeedBoosted={isSpeedBoosted}
+              onSelectPlot={handlePlotSelect}
+              className="flex-1"
+            />
+
+            <section className="panel flex min-h-0 flex-1 flex-col">
+              <div className="panel-head">
+                <div className="panel-title">
+                  <GiCrystalGrowth size={14} /> Sell station
+                </div>
+                <Button
+                  size="sm"
+                  className="h-7 rounded-md bg-amber-500 px-3 text-xs font-semibold text-black hover:bg-amber-400"
+                  onClick={() => setShowSellConfirm(true)}
+                  disabled={ownedCrops.length === 0}
+                >
+                  Sell all{cropsValue > 0 && ` - $${compact.format(cropsValue)}`}
+                </Button>
+              </div>
+              <div className="min-h-[7rem] flex-1 overflow-y-auto p-2">
+                {ownedCrops.length === 0 ? (
+                  <div className="muted flex h-full min-h-[5rem] items-center justify-center rounded-lg border border-dashed border-[color:var(--line)] text-xs">
+                    Harvested crops will appear here
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {ownedCrops.map((plant) => {
                       const count = state.crops[plant.id] || 0
-                      if (count === 0) return null
-
                       return (
                         <Tooltip key={plant.id}>
                           <TooltipTrigger asChild>
-                            <motion.div
-                              layout
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0 }}
-                              className={cn(
-                                "border p-3 transition-all rounded-none flex flex-col items-center group shadow-[0_0_15px_rgba(0,0,0,0.5)]",
-                                isDarkMode ? "border-white/5 bg-black/60" : "border-black/5 bg-white/60"
-                              )}
-                            >
-                              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform arcane-glow">{plant.emoji}</div>
-                              <h3 className="font-gamer font-bold text-[8px] text-neutral-500 mb-1 truncate w-full text-center tracking-widest">{plant.name}</h3>
-                              <div className="text-[11px] font-mono font-bold text-amber-500 mb-3 text-glow-cyan">
-                                {count}x ${plant.sellPrice.toLocaleString()}
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => sellCrop(plant.id)}
-                                className={cn(
-                                  "w-full border-amber-500/30 hover:bg-amber-500/10 text-amber-500 rounded-none h-6 text-[9px] font-gamer tracking-widest",
-                                  isDarkMode ? "bg-black" : "bg-white"
-                                )}
-                              >
-                                CONVERT
-                              </Button>
-                            </motion.div>
+                            <button onClick={() => sellCrop(plant.id)} className="chip flex items-center gap-1.5 px-2 py-1.5">
+                              <span className="text-base leading-none">{plant.emoji}</span>
+                              <span className="ink text-[11px] font-semibold tabular-nums">x{count}</span>
+                              <span className="t-gold ml-auto text-[11px] font-semibold tabular-nums">${compact.format(count * plant.sellPrice)}</span>
+                            </button>
                           </TooltipTrigger>
-                          <TooltipContent className="bg-black border-amber-500/50 text-amber-500 font-gamer text-[10px]">
-                            Transmute {count}x {plant.name} for ${(count * plant.sellPrice).toLocaleString()}
+                          <TooltipContent className={tipClass}>
+                            Sell {count}x {plant.name} for ${(count * plant.sellPrice).toLocaleString()}
                           </TooltipContent>
                         </Tooltip>
                       )
                     })}
-                  </AnimatePresence>
-                  {Object.values(state.crops).every(count => count === 0) && (
-                    <div className="col-span-full py-8 flex flex-col items-center justify-center text-neutral-800 border border-dashed border-white/5">
-                      <p className="text-[9px] font-gamer font-bold opacity-20 tracking-[0.5em]">VAULT_EMPTY</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.section>
-          {/* Global Chat HUD - Persistent Panel */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-8"
-          >
-            <Card className={cn(magicStyle, "border-cyan-500/20 overflow-hidden")}>
-              <CardHeader
-                className="py-2 px-5 border-b border-white/5 bg-white/5 flex flex-row items-center justify-between cursor-pointer hover:bg-white/10 transition-colors"
-                onClick={() => setIsChatOpen(!isChatOpen)}
-              >
-                <CardTitle className="text-[10px] font-gamer font-bold text-cyan-500/60 flex items-center gap-3 tracking-widest uppercase">
-                  <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
-                  Global_Comm_Channel
-                </CardTitle>
-                <div className="flex items-center gap-4">
-                  <div className="text-[9px] text-neutral-600 font-mono hidden md:block">
-                    ACTIVE_LINK // {username}
                   </div>
-                  <div className="text-[10px] text-cyan-500/40 font-gamer uppercase tracking-widest">
-                    {isChatOpen ? "[ COLLAPSE ]" : "[ EXPAND ]"}
-                  </div>
-                </div>
-              </CardHeader>
-              <AnimatePresence initial={false}>
-                {isChatOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <CardContent className="p-0">
-                      <ScrollArea className="h-48 w-full bg-black/20" ref={chatScrollRef}>
-                        <div className="p-4 space-y-3">
-                          {messages.length === 0 ? (
-                            <div className="text-[9px] font-mono text-neutral-700 italic text-center py-8 uppercase tracking-[0.3em] opacity-50">
-                              Initializing secure connection... awaiting signal...
-                            </div>
-                          ) : (
-                            <AnimatePresence initial={false}>
-                              {messages.map((msg) => (
-                                <motion.div
-                                  key={msg.id}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  className="flex items-start gap-4 text-[10px] font-mono group border-l border-transparent hover:border-cyan-500/30 pl-2 transition-colors py-1"
-                                >
-                                  <span className={cn(
-                                    "shrink-0 font-bold tracking-tighter uppercase text-[9px]",
-                                    msg.user === username ? "text-cyan-400" : "text-purple-400"
-                                  )}>
-                                    [{msg.user}]
-                                  </span>
-                                  <div className="flex flex-col gap-0.5">
-                                    <p className={cn(
-                                      "leading-relaxed",
-                                      isDarkMode ? "text-neutral-300" : "text-neutral-700"
-                                    )}>
-                                      {msg.message}
-                                    </p>
-                                    <span className="text-[7px] text-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
-                                      Received_{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false })}
-                                    </span>
-                                  </div>
-                                </motion.div>
-                              ))}
-                            </AnimatePresence>
-                          )}
-                        </div>
-                      </ScrollArea>
-                      <div className="p-3 bg-black/40 border-t border-white/5 flex gap-2">
-                        <div className="relative flex-1">
-                          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-cyan-500/50">
-                            <FaTerminal size={10} />
-                          </div>
-                          <input
-                            type="text"
-                            value={currentMessage}
-                            onChange={(e) => setCurrentMessage(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                            placeholder="ENTER COMMAND OR MESSAGE..."
-                            className={cn(
-                              "w-full bg-black/40 border border-white/10 pl-8 pr-3 py-2 text-[10px] font-mono focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-neutral-800",
-                              isDarkMode ? "text-cyan-100" : "text-black"
-                            )}
-                          />
-                        </div>
-                        <Button
-                          onClick={sendMessage}
-                          disabled={!currentMessage.trim()}
-                          className="bg-cyan-900/20 hover:bg-cyan-500 text-cyan-400 hover:text-black border border-cyan-500/30 rounded-none px-6 text-[10px] font-gamer tracking-widest transition-all"
-                        >
-                          SEND_PKT
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </motion.div>
                 )}
-              </AnimatePresence>
-            </Card>
-          </motion.section>
+              </div>
+            </section>
+          </aside>
         </main>
 
-        {/* Footer - HUD Console */}
-        <footer className={cn(
-          "mt-20 border-t py-8 px-6 transition-colors duration-500",
-          isDarkMode ? "border-white/5 bg-black/80" : "border-black/5 bg-white/80"
-        )}>
-          <div className="mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col items-center md:items-start gap-1">
-              <h2 className="text-sm font-gamer font-bold text-glow-cyan text-cyan-400 tracking-widest">AFK FARM // WRAITH22444</h2>
-              <p className="text-[9px] text-neutral-600 font-mono uppercase tracking-[0.3em]">All rights reserved © 2026</p>
-            </div>
+        <ConfirmDialog
+          open={showSellConfirm}
+          title="Sell all crops?"
+          description={`Convert every harvested crop into coins${cropsValue > 0 ? ` (about $${cropsValue.toLocaleString()})` : ""}. This can't be undone.`}
+          confirmLabel="Sell all"
+          tone="amber"
+          onConfirm={() => {
+            sellAllCrops()
+            setShowSellConfirm(false)
+          }}
+          onCancel={() => setShowSellConfirm(false)}
+        />
 
-            <div className="flex items-center gap-6">
-              <a
-                href="https://github.com/wraith22444/afk-farming"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] font-gamer font-bold text-neutral-400 hover:text-cyan-400 transition-colors tracking-widest border-b border-transparent hover:border-cyan-400 pb-1"
-              >
-                SOURCE_CODE
-              </a>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowResetConfirm(true)}
-                className="text-[10px] font-gamer font-bold text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-none tracking-widest"
-              >
-                WIPE_MEMORY
-              </Button>
-            </div>
-          </div>
-        </footer>
+        <ConfirmDialog
+          open={slotToSell !== null}
+          title="Sell this plot?"
+          description={`Are you sure you want to deconstruct this field node? You will receive a 50% refund of $${lastSlotSellPrice.toLocaleString()}.`}
+          confirmLabel="Confirm"
+          tone="emerald"
+          onConfirm={() => {
+            if (slotToSell !== null) sellSlot(slotToSell)
+            setSlotToSell(null)
+            setSelectedPlot(null)
+          }}
+          onCancel={() => setSlotToSell(null)}
+        />
 
-        {/* Confirmation Modal */}
-        <AnimatePresence>
-          {showSellConfirm && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowSellConfirm(false)}
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-              />
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className={cn("relative w-full max-w-sm p-6 neon-border-amber", magicStyle)}
-              >
-                <h3 className="text-xl font-gamer font-bold text-amber-500 mb-2 tracking-widest text-glow-cyan">Confirm_Transmutation</h3>
-                <p className={cn(
-                  "text-xs font-mono mb-6 uppercase tracking-wider leading-relaxed",
-                  isDarkMode ? "text-neutral-400" : "text-neutral-600"
-                )}>
-                  Are you sure you wish to convert all harvested items into wealth? This process is irreversible.
-                </p>
-                <div className="flex gap-4">
-                  <Button
-                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-black rounded-none font-gamer font-bold h-10 tracking-[0.2em]"
-                    onClick={() => {
-                      sellAllCrops()
-                      setShowSellConfirm(false)
-                    }}
-                  >
-                    PROCEED
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "flex-1 border-white/10 hover:bg-white/5 rounded-none font-gamer font-bold h-10 tracking-[0.2em]",
-                      isDarkMode ? "text-neutral-400 border-white/10" : "text-neutral-600 border-black/10"
-                    )}
-                    onClick={() => setShowSellConfirm(false)}
-                  >
-                    ABORT
-                  </Button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {slotToSell !== null && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setSlotToSell(null)}
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-              />
-              <motion.div
-                initial={{ scale: 0.9, y: 20, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ scale: 0.9, y: 20, opacity: 0 }}
-                className={cn("relative w-full max-w-sm p-8 border border-cyan-500/30 shadow-[0_0_50px_rgba(34,211,238,0.1)]", magicStyle)}
-              >
-                <div className="flex items-center gap-4 mb-4 text-cyan-400">
-                  <FaTerminal size={20} className="text-glow-cyan" />
-                  <h3 className="text-lg font-gamer font-bold tracking-widest uppercase">Node_Deconstruction</h3>
-                </div>
-                <p className={cn(
-                  "text-xs font-mono mb-8 uppercase tracking-widest leading-relaxed",
-                  isDarkMode ? "text-neutral-400" : "text-neutral-600"
-                )}>
-                  Are you sure you want to deconstruct this field node? You will receive a 50% refund of ${lastSlotSellPrice.toLocaleString()}.
-                </p>
-                <div className="flex gap-4">
-                  <Button
-                    className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-black rounded-none font-gamer font-bold h-10 tracking-[0.2em]"
-                    onClick={() => {
-                      sellSlot(slotToSell)
-                      setSlotToSell(null)
-                    }}
-                  >
-                    CONFIRM
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "flex-1 border-white/10 hover:bg-white/5 rounded-none font-gamer font-bold h-10 tracking-[0.2em]",
-                      isDarkMode ? "text-neutral-400 border-white/10" : "text-neutral-600 border-black/10"
-                    )}
-                    onClick={() => setSlotToSell(null)}
-                  >
-                    CANCEL
-                  </Button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {showResetConfirm && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowResetConfirm(false)}
-                className="absolute inset-0 bg-black/90 backdrop-blur-md"
-              />
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className={cn("relative w-full max-w-sm p-8 border border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]", magicStyle)}
-              >
-                <div className="flex items-center gap-4 mb-4 text-red-500">
-                  <FaTerminal size={24} className="animate-pulse text-white" />
-                  <h3 className="text-xl font-gamer font-bold tracking-widest uppercase">Critical_Failure</h3>
-                </div>
-                <p className={cn(
-                  "text-xs font-mono mb-8 uppercase tracking-wider leading-relaxed",
-                  isDarkMode ? "text-neutral-400" : "text-neutral-600"
-                )}>
-                  Warning: Initiating a global memory wipe will permanently erase all credits, levels, and items. This action cannot be undone.
-                </p>
-                <div className="flex flex-col gap-3">
-                  <Button
-                    className="w-full bg-red-600 hover:bg-red-500 text-white rounded-none font-gamer font-bold h-12 tracking-[0.3em]"
-                    onClick={() => {
-                      resetGame()
-                      setShowResetConfirm(false)
-                    }}
-                  >
-                    CONFIRM_WIPE
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full text-neutral-500 hover:text-white rounded-none font-gamer font-bold h-10 tracking-[0.2em]"
-                    onClick={() => setShowResetConfirm(false)}
-                  >
-                    CANCEL_ABORT
-                  </Button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+        <ConfirmDialog
+          open={showResetConfirm}
+          title="Reset your save?"
+          description="This permanently erases all coins, levels and items. This action cannot be undone."
+          confirmLabel="Reset everything"
+          tone="red"
+          onConfirm={() => {
+            resetGame()
+            setShowResetConfirm(false)
+          }}
+          onCancel={() => setShowResetConfirm(false)}
+        />
       </div>
     </TooltipProvider>
   )

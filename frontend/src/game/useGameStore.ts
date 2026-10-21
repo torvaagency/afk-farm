@@ -89,6 +89,7 @@ export function useGameStore() {
         const newSlots = prev.slots.map((slot) => {
           if (!slot || slot.isHarvestable) return slot;
           const plant = PLANTS[slot.plantId];
+          if (!plant) return null;
           const elapsed = (Date.now() - slot.plantedAt) / 1000;
           if (elapsed * speedMultiplier >= plant.growTime) {
             changed = true;
@@ -164,8 +165,10 @@ export function useGameStore() {
       const plant = PLANTS[slot.plantId];
       // Diablo scaling: square root of cost + level bonus
       const expGain = Math.floor(Math.sqrt(plant.cost) * 2) + (plant.levelRequired * 5);
-      const foundPotion = Math.random() < 0.15;
       let finalLevel = state.level;
+      let foundSpeedPotion = false;
+      let foundHarvestPotion = false;
+      let foundFinishPotion = false;
 
       setState((prev) => {
         const newSlots = [...prev.slots];
@@ -180,9 +183,9 @@ export function useGameStore() {
         }
         finalLevel = newLevel;
 
-        let foundSpeedPotion = Math.random() < 0.05;
-        let foundHarvestPotion = Math.random() < 0.03;
-        let foundFinishPotion = Math.random() < 0.02; // Rare drop
+        foundSpeedPotion = Math.random() < 0.05;
+        foundHarvestPotion = Math.random() < 0.03;
+        foundFinishPotion = Math.random() < 0.02; // Rare drop
         let newItems = { ...prev.items };
 
         if (foundSpeedPotion) {
@@ -228,7 +231,6 @@ export function useGameStore() {
 
   const useItem = (itemId: string) => {
     let success = false;
-    let harvestedCount = 0;
 
     if (itemId === "harvest_potion") {
       const harvestableIndices = state.slots
@@ -237,7 +239,6 @@ export function useGameStore() {
 
       if (harvestableIndices.length > 0) {
         let totalExpGain = 0;
-        const harvestedCrops: Record<string, number> = {};
         let finalLevel = state.level;
 
         setState((prev) => {

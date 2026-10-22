@@ -137,75 +137,100 @@ export default function QuestsDialog({
             <ScrollArea className="max-h-[50vh] flex-1 p-3">
               {tab === "quests" ? (
                 <div className="flex flex-col gap-2.5">
-                  {quests.map((q) => {
-                    const percent = Math.min(100, Math.floor((q.progress / q.target) * 100))
-                    const isClaimable = q.completed && !q.claimed
+                  {(() => {
+                    const sortedQuests = [...quests].sort((a, b) => {
+                      const scoreA = a.claimed ? 2 : a.completed ? 0 : 1
+                      const scoreB = b.claimed ? 2 : b.completed ? 0 : 1
+                      return scoreA - scoreB
+                    })
 
-                    return (
-                      <div
-                        key={q.id}
-                        className={`chip flex flex-col gap-2 p-3 transition-colors ${
-                          isClaimable ? "border-emerald-500/50 bg-emerald-500/[0.04]" : ""
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-xs">{q.title}</span>
-                              {isClaimable && (
-                                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
-                                  Ready to Claim!
-                                </span>
-                              )}
+                    return sortedQuests.map((q) => {
+                      const isClaimed = q.claimed
+                      const isClaimable = q.completed && !q.claimed
+                      const percent = isClaimed ? 100 : Math.min(100, Math.floor((q.progress / q.target) * 100))
+
+                      return (
+                        <div
+                          key={q.id}
+                          className={`chip flex flex-col gap-2 p-3 transition-colors ${
+                            isClaimed
+                              ? "opacity-60 bg-[var(--surface-2)]"
+                              : isClaimable
+                              ? "border-emerald-500/50 bg-emerald-500/[0.04]"
+                              : ""
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-xs">{q.title}</span>
+                                {isClaimed ? (
+                                  <span className="flex items-center gap-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] font-medium text-zinc-400">
+                                    <FaCheck size={7} /> Completed
+                                  </span>
+                                ) : isClaimable ? (
+                                  <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
+                                    Ready to Claim!
+                                  </span>
+                                ) : null}
+                              </div>
+                              <p className="muted text-[11px] mt-0.5">{q.description}</p>
                             </div>
-                            <p className="muted text-[11px] mt-0.5">{q.description}</p>
-                          </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="flex items-center gap-1 rounded bg-amber-500/15 px-2 py-1 text-[10px] font-bold text-amber-400 border border-amber-500/30">
-                              <FaCoins size={9} /> ${q.reward.money.toLocaleString()}
-                            </span>
-                            <span className="flex items-center gap-1 rounded bg-emerald-500/15 px-2 py-1 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
-                              <FaStar size={9} /> +{q.reward.exp} XP
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Progress bar & action */}
-                        <div className="flex items-center gap-3 pt-1">
-                          <div className="flex-1">
-                            <div className="flex justify-between text-[10px] font-mono muted mb-1">
-                              <span>Progress</span>
-                              <span>
-                                {q.progress.toLocaleString()} / {q.target.toLocaleString()} ({percent}%)
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="flex items-center gap-1 rounded bg-amber-500/15 px-2 py-1 text-[10px] font-bold text-amber-400 border border-amber-500/30">
+                                <FaCoins size={9} /> ${q.reward.money.toLocaleString()}
+                              </span>
+                              <span className="flex items-center gap-1 rounded bg-emerald-500/15 px-2 py-1 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+                                <FaStar size={9} /> +{q.reward.exp} XP
                               </span>
                             </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-3)]">
-                              <div
-                                className={`h-full transition-all duration-300 rounded-full ${
-                                  isClaimable ? "bg-emerald-400" : "bg-emerald-500/60"
-                                }`}
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
                           </div>
 
-                          <Button
-                            size="sm"
-                            disabled={!isClaimable}
-                            onClick={() => onClaimQuest(q.id)}
-                            className={`h-7 px-3 text-xs shrink-0 rounded-md font-semibold ${
-                              isClaimable
-                                ? "bg-emerald-500 text-black hover:bg-emerald-400 shadow-md shadow-emerald-500/20"
-                                : "muted bg-[var(--surface-3)] opacity-60"
-                            }`}
-                          >
-                            {isClaimable ? "Claim" : "In Progress"}
-                          </Button>
+                          {/* Progress bar & action */}
+                          <div className="flex items-center gap-3 pt-1">
+                            <div className="flex-1">
+                              <div className="flex justify-between text-[10px] font-mono muted mb-1">
+                                <span>Progress</span>
+                                <span>
+                                  {isClaimed
+                                    ? `${q.target.toLocaleString()} / ${q.target.toLocaleString()} (100%)`
+                                    : `${q.progress.toLocaleString()} / ${q.target.toLocaleString()} (${percent}%)`}
+                                </span>
+                              </div>
+                              <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-3)]">
+                                <div
+                                  className={`h-full transition-all duration-300 rounded-full ${
+                                    isClaimed
+                                      ? "bg-zinc-600"
+                                      : isClaimable
+                                      ? "bg-emerald-400"
+                                      : "bg-emerald-500/60"
+                                  }`}
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            <Button
+                              size="sm"
+                              disabled={!isClaimable}
+                              onClick={() => onClaimQuest(q.id)}
+                              className={`h-7 px-3 text-xs shrink-0 rounded-md font-semibold ${
+                                isClaimed
+                                  ? "bg-zinc-800 text-zinc-500 cursor-default"
+                                  : isClaimable
+                                  ? "bg-emerald-500 text-black hover:bg-emerald-400 shadow-md shadow-emerald-500/20"
+                                  : "muted bg-[var(--surface-3)] opacity-60"
+                              }`}
+                            >
+                              {isClaimed ? "Claimed ✓" : isClaimable ? "Claim" : "In Progress"}
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })
+                  })()}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2.5">

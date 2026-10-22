@@ -128,6 +128,20 @@ export function useGameStore() {
         }
         if (!parsed.quests || parsed.quests.length === 0) {
           parsed.quests = INITIAL_QUESTS;
+        } else {
+          const existingMap = new Map(parsed.quests.map((q: any) => [q.id, q]));
+          parsed.quests = INITIAL_QUESTS.map((initQ) => {
+            const savedQ = existingMap.get(initQ.id) as any;
+            if (savedQ) {
+              return {
+                ...initQ,
+                progress: savedQ.progress ?? 0,
+                completed: !!savedQ.completed,
+                claimed: !!savedQ.claimed,
+              };
+            }
+            return initQ;
+          });
         }
         if (!parsed.achievementsClaimed) {
           parsed.achievementsClaimed = {};
@@ -268,6 +282,7 @@ export function useGameStore() {
 
             // Update harvest & weather quests
             newQuests = newQuests.map((q) => {
+              if (q.claimed || q.completed) return q;
               if (q.category === "harvest") {
                 const nextProg = Math.min(q.target, q.progress + botHarvestCount);
                 return { ...q, progress: nextProg, completed: nextProg >= q.target };
@@ -345,6 +360,7 @@ export function useGameStore() {
         };
 
         const newQuests = prev.quests.map((q) => {
+          if (q.claimed || q.completed) return q;
           if (q.category === "plant") {
             const nextProg = Math.min(q.target, q.progress + 1);
             return { ...q, progress: nextProg, completed: nextProg >= q.target };
@@ -412,6 +428,7 @@ export function useGameStore() {
         };
 
         const newQuests = prev.quests.map((q) => {
+          if (q.claimed || q.completed) return q;
           if (q.category === "harvest") {
             const nextProg = Math.min(q.target, q.progress + 1);
             return { ...q, progress: nextProg, completed: nextProg >= q.target };
@@ -609,6 +626,7 @@ export function useGameStore() {
         earned = price;
 
         const newQuests = prev.quests.map((q) => {
+          if (q.claimed || q.completed) return q;
           if (q.category === "sell") {
             const nextProg = Math.min(q.target, q.progress + 1);
             return { ...q, progress: nextProg, completed: nextProg >= q.target };
@@ -656,6 +674,7 @@ export function useGameStore() {
     if (totalGain > 0) {
       setState((prev) => {
         const newQuests = prev.quests.map((q) => {
+          if (q.claimed || q.completed) return q;
           if (q.category === "sell") {
             const nextProg = Math.min(q.target, q.progress + totalCropCount);
             return { ...q, progress: nextProg, completed: nextProg >= q.target };
@@ -822,23 +841,14 @@ export function useGameStore() {
         newLevel++;
       }
 
-      // Roll into the next tier of this quest!
+      // Quest can ONLY be completed ONCE! Permanently mark it as completed and claimed.
       const nextQuests = prev.quests.map((q) => {
         if (q.id === questId) {
-          const nextTarget = Math.floor(q.target * 1.8);
-          const nextMoney = Math.floor(q.reward.money * 1.6);
-          const nextExpReward = Math.floor(q.reward.exp * 1.5);
           return {
             ...q,
-            target: nextTarget,
-            progress: 0,
-            completed: false,
-            claimed: false,
-            reward: {
-              money: nextMoney,
-              exp: nextExpReward,
-              item: q.reward.item,
-            },
+            progress: q.target,
+            completed: true,
+            claimed: true,
           };
         }
         return q;

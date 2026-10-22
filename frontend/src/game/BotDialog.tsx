@@ -46,10 +46,10 @@ export default function BotDialog({
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
-            className="panel relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden shadow-2xl"
+            className="panel relative flex h-[min(620px,85vh)] w-full max-w-lg flex-col overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="panel-head flex items-center justify-between border-b border-[color:var(--line)] px-4 py-3">
+            <div className="panel-head flex items-center justify-between border-b border-[color:var(--line)] px-4 py-3 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-base leading-none">🧚</span>
                 <h2 className="text-sm font-semibold tracking-wide">Farm Fairy Sanctuary</h2>
@@ -59,7 +59,7 @@ export default function BotDialog({
               </Button>
             </div>
 
-            <div className="flex flex-col gap-4 p-4 overflow-y-auto">
+            <div className="min-h-0 flex-1 flex flex-col gap-4 p-4 overflow-y-auto overscroll-contain">
               {/* Fairy Status Banner */}
               <div className="chip flex items-center justify-between p-3.5 border-emerald-500/30 bg-emerald-500/[0.04]">
                 <div className="flex items-center gap-3">

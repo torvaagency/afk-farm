@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { FaTimes, FaCheck, FaTrophy, FaScroll, FaCoins, FaStar } from "react-icons/fa"
 import { ACHIEVEMENTS, type Quest } from "./features"
 import type { GameStats } from "./useGameStore"
@@ -65,10 +64,10 @@ export default function QuestsDialog({
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
-            className="panel relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden shadow-2xl"
+            className="panel relative flex h-[min(640px,85vh)] w-full max-w-2xl flex-col overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="panel-head flex items-center justify-between border-b border-[color:var(--line)] px-4 py-3">
+            <div className="panel-head flex items-center justify-between border-b border-[color:var(--line)] px-4 py-3 shrink-0">
               <div className="flex items-center gap-2">
                 <FaScroll className="text-amber-400" size={15} />
                 <h2 className="text-sm font-semibold tracking-wide">Missions & Achievements</h2>
@@ -79,7 +78,7 @@ export default function QuestsDialog({
             </div>
 
             {/* Quick Stats Bar */}
-            <div className="grid grid-cols-2 gap-2 border-b border-[color:var(--line)] bg-[var(--surface-2)] p-3 sm:grid-cols-4 text-xs">
+            <div className="grid grid-cols-2 gap-2 border-b border-[color:var(--line)] bg-[var(--surface-2)] p-3 sm:grid-cols-4 text-xs shrink-0">
               <div className="chip flex flex-col items-center justify-center py-1.5 text-center">
                 <span className="muted text-[10px]">Total Harvested</span>
                 <span className="font-bold tabular-nums text-emerald-400">{stats.totalHarvested.toLocaleString()}</span>
@@ -99,7 +98,7 @@ export default function QuestsDialog({
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-[color:var(--line)] px-3 pt-2">
+            <div className="flex border-b border-[color:var(--line)] px-3 pt-2 shrink-0">
               <button
                 onClick={() => setTab("quests")}
                 className={`relative flex items-center gap-2 px-4 py-2 text-xs font-semibold transition-colors ${
@@ -133,8 +132,8 @@ export default function QuestsDialog({
               </button>
             </div>
 
-            {/* Content List */}
-            <ScrollArea className="max-h-[50vh] flex-1 p-3">
+            {/* Content List with Native Smooth Scrolling */}
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 overscroll-contain">
               {tab === "quests" ? (
                 <div className="flex flex-col gap-2.5">
                   {(() => {
@@ -314,7 +313,7 @@ export default function QuestsDialog({
                   })}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </motion.div>
         </div>
       )}

@@ -39,6 +39,8 @@ export default function QuestsDialog({
     else if (achId.startsWith("ach_earn_")) current = stats.totalEarned
     else if (achId.startsWith("ach_storm_")) current = stats.rainHarvests
     else if (achId.startsWith("ach_bot_")) current = autoHarvesterLevel
+    else if (achId.startsWith("ach_plant_")) current = stats.totalPlanted
+    else if (achId.startsWith("ach_potion_")) current = stats.potionsUsed
     return { current: Math.min(target, current), raw: current, isReady: current >= target }
   }
 

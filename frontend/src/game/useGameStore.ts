@@ -878,6 +878,8 @@ export function useGameStore() {
     else if (ach.id.startsWith("ach_earn_")) currentVal = state.stats.totalEarned;
     else if (ach.id.startsWith("ach_storm_")) currentVal = state.stats.rainHarvests;
     else if (ach.id.startsWith("ach_bot_")) currentVal = state.autoHarvester.level;
+    else if (ach.id.startsWith("ach_plant_")) currentVal = state.stats.totalPlanted;
+    else if (ach.id.startsWith("ach_potion_")) currentVal = state.stats.potionsUsed;
 
     if (currentVal < ach.target) {
       addToast("Achievement milestone not yet reached!", "info");
